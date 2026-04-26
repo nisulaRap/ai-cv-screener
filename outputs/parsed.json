@@ -1,0 +1,131 @@
+[
+    {
+        "full_name": "John Silva",
+        "email": "johnsilva@gmail.com",
+        "phone": "+94 77 123 4567",
+        "skills": [
+            "Python",
+            "Java",
+            "SQL"
+        ],
+        "education": [
+            "BSc in Software Engineering"
+        ],
+        "experience": [
+            "Intern at ABC Company"
+        ],
+        "projects": [],
+        "certifications": [],
+        "job_titles": [
+            "Intern"
+        ],
+        "years_of_experience": "",
+        "location": "",
+        "file_name": "sample_cv.txt",
+        "raw_text": "John Silva\nEmail: johnsilva@gmail.com\nPhone: +94 77 123 4567\n\nSkills:\nPython, Java, SQL\n\nEducation:\nBSc in Software Engineering\n\nExperience:\nIntern at ABC Company",
+        "parser_type": "ollama_ai"
+    },
+    {
+        "full_name": "Kasun Fernando",
+        "email": "kasunfernando@gmail.com",
+        "phone": "+94 77 987 6543",
+        "skills": [
+            "Python",
+            "Java",
+            "SQL",
+            "MongoDB",
+            "Express.js"
+        ],
+        "education": [
+            {
+                "degree": "BSc in Information Technology",
+                "university": "University of Colombo School of Computing",
+                "graduation_year": "2025"
+            }
+        ],
+        "experience": [
+            {
+                "job_title": "Trainee Software Engineer",
+                "company": "ABC Technologies",
+                "start_date": "2023",
+                "end_date": "2024",
+                "responsibilities": [
+                    "Assisted in backend API development using Node.js",
+                    "Worked with databases and optimized queries"
+                ]
+            }
+        ],
+        "projects": [
+            {
+                "name": "Expense Tracker System",
+                "description": "Developed a personal finance tracking system using MERN stack"
+            }
+        ],
+        "certifications": [
+            "Google Data Analytics Certificate"
+        ],
+        "job_titles": [
+            "Trainee Software Engineer"
+        ],
+        "years_of_experience": "1 year",
+        "location": "Kandy, Sri Lanka",
+        "file_name": "sample_cv_2.pdf",
+        "raw_text": "Kasun Fernando  \nEmail: kasunfernando@gmail.com  \nPhone: +94 77 987 6543  \nLocation: Kandy, Sri Lanka  \n \nProfile:  \nDetail -oriented IT student with strong analytical skills and interest in data analysis and backend \ndevelopment.  \n \nSkills:  \nPython, Java, SQL, MongoDB, Express.js  \n \nEducation:  \nBSc in Information Technology  \nUniversity of Colombo School of Computing  \nGraduation Year: 2025  \n \nExperience:  \nTrainee Software Engineer  \nABC Technologies (2023 - 2024)  \n- Assisted in backend API development using Node.js  \n- Worked with databases and optimized queries  \n \nProjects:  \nExpense Tracker System  \n- Developed a personal finance tracking system using MERN stack  \n \nCertifications:  \nGoogle Data Analytics Certificate",
+        "parser_type": "ollama_ai"
+    },
+    {
+        "full_name": "Nimali Perera",
+        "email": "nimali.perera@gmail.com",
+        "phone": "+94 71 234 5678",
+        "skills": [
+            "HTML",
+            "CSS",
+            "JavaScript",
+            "React",
+            "Node.js",
+            "Python"
+        ],
+        "education": [
+            {
+                "degree": "BSc (Hons) in Software Engineering",
+                "institution": "Sri Lanka Institute of Information Technology (SLIIT)",
+                "expected_graduation": "2026"
+            }
+        ],
+        "experience": [
+            {
+                "job_title": "Intern Software Developer",
+                "company": "XYZ Tech Solutions",
+                "start_date": "2024",
+                "end_date": "Present",
+                "responsibilities": [
+                    "Developed responsive web applications using React",
+                    "Fixed bugs and improved application performance"
+                ]
+            }
+        ],
+        "projects": [
+            {
+                "project_name": "Online Voting System",
+                "technologies_used": [
+                    "React",
+                    "Node.js"
+                ],
+                "description": ""
+            }
+        ],
+        "certifications": [
+            {
+                "certification_name": "AWS Cloud Practitioner"
+            }
+        ],
+        "job_titles": [
+            "Intern Software Developer"
+        ],
+        "years_of_experience": "2 years",
+        "location": "Colombo, Sri Lanka",
+        "file_name": "sample_cv_1.docx",
+        "raw_text": "Nimali Perera\nEmail: nimali.perera@gmail.com\nPhone: +94 71 234 5678\nLocation: Colombo, Sri Lanka\n\nProfessional Summary:\nHighly motivated Software Engineering undergraduate with a passion for web development and problem solving.\n\nSkills:\nHTML, CSS, JavaScript, React, Node.js, Python\n\nEducation:\nBSc (Hons) in Software Engineering\nSri Lanka Institute of Information Technology (SLIIT)\nExpected Graduation: 2026\n\nExperience:\nIntern Software Developer\nXYZ Tech Solutions (2024 - Present)\n- Developed responsive web applications using React\n- Fixed bugs and improved application performance\n\nProjects:\nOnline Voting System\n- Built a full-stack web application using React and Node.js\n\nCertifications:\nAWS Cloud Practitioner",
+        "parser_type": "ollama_ai"
+    }
+]
