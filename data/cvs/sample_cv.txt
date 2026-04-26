@@ -1,0 +1,12 @@
+John Silva
+Email: johnsilva@gmail.com
+Phone: +94 77 123 4567
+
+Skills:
+Python, Java, SQL
+
+Education:
+BSc in Software Engineering
+
+Experience:
+Intern at ABC Company
