@@ -1,16 +1,8 @@
-"""
-Tests for Agent 4 — Report Generator.
-Validates file creation, content correctness, grammar tool integration,
-and graceful fallback when the grammar API is unavailable.
-"""
 import pytest
 from pathlib import Path
 from unittest.mock import patch, call
 from agents.report_generator import run_report_generator
 from state.shared_state import MASState
-
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def make_state(candidates: list = None) -> MASState:
     """Build a minimal MASState with optional custom ranked candidates."""
@@ -37,8 +29,7 @@ def make_state(candidates: list = None) -> MASState:
     }
 
 
-# ── Test 1: Report file must be created ──────────────────────────────────────
-
+# Test 1: Report file must be created
 @patch("agents.report_generator.grammar_check")
 def test_report_file_is_created(mock_grammar):
     """Agent 4 must write the HTML file to the output directory."""
@@ -53,8 +44,7 @@ def test_report_file_is_created(mock_grammar):
     assert Path(result["report_path"]).exists(), "HTML file must exist on disk"
 
 
-# ── Test 2: Report must contain all candidate names ───────────────────────────
-
+# Test 2: Report must contain all candidate names
 @patch("agents.report_generator.grammar_check")
 def test_report_contains_all_candidate_names(mock_grammar):
     """Every candidate's name must appear in the generated HTML."""
@@ -66,8 +56,7 @@ def test_report_contains_all_candidate_names(mock_grammar):
     assert "Bob Fernando" in html
 
 
-# ── Test 3: Shortlisted/Rejected labels must be correct ──────────────────────
-
+# Test 3: Shortlisted/Rejected labels must be correct
 @patch("agents.report_generator.grammar_check")
 def test_report_has_correct_status_labels(mock_grammar):
     """HTML must contain 'Shortlisted' and 'Rejected' CSS classes for correct candidates."""
@@ -79,8 +68,7 @@ def test_report_has_correct_status_labels(mock_grammar):
     assert "pill-rejected" in html
 
 
-# ── Test 4: Grammar check tool must always be called ─────────────────────────
-
+# Test 4: Grammar check tool must always be called
 @patch("agents.report_generator.grammar_check")
 def test_grammar_check_tool_is_called(mock_grammar):
     """Agent 4 must invoke the grammar_check tool at least once per run."""
@@ -90,8 +78,7 @@ def test_grammar_check_tool_is_called(mock_grammar):
     assert mock_grammar.called, "grammar_check must be called by the agent"
 
 
-# ── Test 5: Graceful fallback when grammar API fails ─────────────────────────
-
+# Test 5: Graceful fallback when grammar API fails
 @patch("agents.report_generator.grammar_check", side_effect=RuntimeError("API timeout"))
 def test_report_generated_even_if_grammar_api_fails(mock_grammar):
     """Report must still be created if LanguageTool API is unavailable."""
@@ -102,8 +89,7 @@ def test_report_generated_even_if_grammar_api_fails(mock_grammar):
     assert any("Grammar check skipped" in e for e in result["errors"])
 
 
-# ── Test 6: Scores must appear in the HTML ───────────────────────────────────
-
+# Test 6: Scores must appear in the HTML
 @patch("agents.report_generator.grammar_check")
 def test_report_contains_scores(mock_grammar):
     """Candidate scores (e.g. 88, 45) must appear in the HTML output."""
@@ -115,8 +101,7 @@ def test_report_contains_scores(mock_grammar):
     assert "45" in html
 
 
-# ── Test 7: Empty candidate list edge case ───────────────────────────────────
-
+# Test 7: Empty candidate list edge case
 @patch("agents.report_generator.grammar_check")
 def test_report_handles_empty_candidate_list(mock_grammar):
     """Agent 4 must not crash when there are zero ranked candidates."""
