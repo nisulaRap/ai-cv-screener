@@ -1,8 +1,3 @@
-"""
-Shared state types for the Multi-Agent System (MAS).
-
-MASState is a TypedDict that represents the shared state passed between agents.
-"""
 from typing import TypedDict, List, Optional, Any
 
 
