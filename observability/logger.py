@@ -1,8 +1,3 @@
-"""
-Logging utilities for the Multi-Agent System (MAS).
-
-Provides a simple logging function for tracking agent events.
-"""
 import json
 from datetime import datetime
 from typing import Any, Optional
