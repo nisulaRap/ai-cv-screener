@@ -1,6 +1,5 @@
 from agents.ranker_agent import run_candidate_ranker
 
-# Fake state simulating what Agent 2 would pass
 state = {
     "job_description_path": "data/job.json",
     "cv_folder_path": "data/cvs",
@@ -18,17 +17,15 @@ state = {
     "errors": [],
 }
 
-# Run your agent
 result = run_candidate_ranker(state)
 
-# Print results
 print("\n========== RANKED CANDIDATES ==========")
 for c in result["ranked_candidates"]:
-    print(f"#{c['rank']} {c['name']} — Score: {c['score']} — {c['status']}")
+    print(f"\n#{c['rank']} {c['name']} — Score: {c['score']} — {c['status']}")
+    print(f"    Reasoning: {c['reasoning']}")
 
-print("\n========== LOGS ==========")
-for log in result["logs"]:
-    print(log)
+print("\n========== EXECUTIVE SUMMARY ==========")
+print(result.get("executive_summary", "No summary generated."))
 
 print("\n========== ERRORS ==========")
 print(result["errors"] if result["errors"] else "None")
