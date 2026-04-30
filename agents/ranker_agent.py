@@ -1,5 +1,8 @@
 from typing import Any
 from tools.ranker_tool import ranker_tool
+from observability.logger import log_event
+from state.shared_state import MASState
+
 AGENT_NAME = "CandidateRanker"
 
 

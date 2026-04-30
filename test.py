@@ -10,8 +10,8 @@ Run with:
 """
 
 import pytest
-from ranker_tool import ranker_tool
-from ranker_agent import run_candidate_ranker
+from tools.ranker_tool import ranker_tool
+from agents.ranker_agent import run_candidate_ranker
 
 
 # ---------------------------------------------------------------------------
