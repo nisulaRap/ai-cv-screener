@@ -163,6 +163,21 @@ def score_candidate(
     # Log the tool being called
     log_tool_call(candidate_id, candidate_name)
 
+    # Early return for empty candidate — no skills, no experience, no education
+    if not candidate.get("skills") and not candidate.get("education") and candidate.get("experience_years", 0) == 0:
+        empty_result: MatchResult = {
+            "candidate_id": candidate_id,
+            "name": candidate_name,
+            "score": 0.0,
+            "reasoning": "Candidate profile is empty. No skills, experience, or education provided.",
+            "matched_skills": [],
+            "missing_skills": [],
+            "status": "Pending"
+        }
+        save_match_result(empty_result, job["job_id"])
+        log_score_result(candidate_id, candidate_name, 0.0, [])
+        return empty_result
+
     # Build the prompt
     prompt = build_scoring_prompt(candidate, job)
     log_llm_prompt(candidate_id, prompt)

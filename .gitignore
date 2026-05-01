@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+database/cv_screener.db
+logs/job_matcher.log
+.env
