@@ -1,0 +1,6 @@
+langchain
+langchain-ollama
+langgraph
+sqlite-utils
+requests
+python-dotenv
