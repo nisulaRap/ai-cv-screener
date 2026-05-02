@@ -296,7 +296,7 @@ class TestLLMAsJudge(unittest.TestCase):
     def setUp(self):
         """Set up LLM judge and generate result to evaluate."""
         from langchain_ollama import OllamaLLM
-        self.judge_llm = OllamaLLM(model="llama3.2", temperature=0.0)
+        self.judge_llm = OllamaLLM(model="llama3:8b", temperature=0.0)
         initialize_database()
         clear_results_for_job("test_job_001")
 

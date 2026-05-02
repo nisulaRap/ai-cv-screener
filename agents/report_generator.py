@@ -1,17 +1,17 @@
-import sys
-import os
+"""
+Receives the ranked candidate list from Agent 3, grammar-checks the
+reasoning text via a free API, and writes a professional HTML report.
+"""
 from pathlib import Path
 from datetime import datetime
 from jinja2 import Template
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from state.shared_state import MASState
 from tools.grammar_check_tool import grammar_check
 from observability.logger import log_event
 
 AGENT_NAME = "ReportGenerator"
-OUTPUT_PATH = "output/shortlist_report.html"
+OUTPUT_PATH = "outputs/shortlist_report.html"
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -28,7 +28,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     .container { max-width: 860px; margin: auto; }
     h1 { font-size: 26px; color: #0f3460; border-bottom: 3px solid #0f3460; padding-bottom: 12px; margin-bottom: 8px; }
-    .meta { color: #666; font-size: 14px; margin-bottom: 28px; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .executive-summary {
+      background: #eef2ff; border-left: 4px solid #0f3460;
+      border-radius: 6px; padding: 16px 20px;
+      font-size: 14px; color: #2c3e50;
+      margin-bottom: 28px; line-height: 1.6;
+    }
+    .executive-summary strong { display: block; margin-bottom: 6px; color: #0f3460; }
     .summary {
       display: flex; gap: 24px;
       background: #fff; border-radius: 10px;
@@ -46,7 +53,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       padding: 22px 26px; margin-bottom: 16px;
       box-shadow: 0 1px 5px rgba(0,0,0,0.07);
       border-left: 5px solid #ccc;
-      position: relative;
     }
     .card.shortlisted { border-left-color: #27ae60; }
     .card.rejected    { border-left-color: #e74c3c; }
@@ -54,20 +60,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .candidate-name { font-size: 18px; font-weight: 600; }
     .score-badge {
       font-size: 22px; font-weight: 700;
-      min-width: 70px; text-align: right;
-      color: #0f3460;
+      min-width: 70px; text-align: right; color: #0f3460;
     }
     .rank-label { font-size: 12px; color: #999; margin-top: 2px; }
     .status-pill {
       display: inline-block; padding: 3px 12px;
-      border-radius: 20px; font-size: 12px; font-weight: 600;
-      margin-top: 6px;
+      border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 6px;
     }
     .pill-shortlisted { background: #e8f8f0; color: #1e8449; }
     .pill-rejected    { background: #fdecea; color: #c0392b; }
     .email { font-size: 13px; color: #888; margin-top: 4px; }
-    .reasoning { font-size: 14px; color: #555; margin-top: 12px; font-style: italic; border-top: 1px solid #f0f0f0; padding-top: 10px; }
-    .grammar-note { font-size: 12px; color: #aaa; margin-top: 8px; text-align: right; }
+    .reasoning {
+      font-size: 14px; color: #555; margin-top: 12px;
+      font-style: italic; border-top: 1px solid #f0f0f0; padding-top: 10px;
+    }
     .footer { text-align: center; font-size: 13px; color: #bbb; margin-top: 40px; }
   </style>
 </head>
@@ -79,6 +85,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <strong>Generated:</strong> {{ generated_at }} &nbsp;|&nbsp;
     <strong>Grammar issues corrected:</strong> {{ grammar_issues }}
   </div>
+
+  {% if executive_summary %}
+  <div class="executive-summary">
+    <strong>Executive Summary</strong>
+    {{ executive_summary }}
+  </div>
+  {% endif %}
 
   <div class="summary">
     <div class="summary-item"><div class="num num-total">{{ total }}</div><div class="label">Total Candidates</div></div>
@@ -115,15 +128,11 @@ def run_report_generator(state: MASState) -> MASState:
     """
     Agent 4 node for LangGraph.
 
-    Steps:
-      1. Collects all reasoning text from ranked candidates.
-      2. Calls grammar_check tool (free LanguageTool API).
-      3. Applies corrected text back to candidates.
-      4. Renders Jinja2 HTML template with all candidate data.
-      5. Writes report to output/shortlist_report.html.
+    Reads state["ranked_candidates"] and state["executive_summary"] from Agent 3.
+    Calls grammar_check tool, renders HTML report, writes to disk.
 
     Args:
-        state: The shared MAS state containing ranked_candidates.
+        state: The shared MAS state containing ranked_candidates and executive_summary.
 
     Returns:
         Updated state with report_path set.
@@ -131,14 +140,21 @@ def run_report_generator(state: MASState) -> MASState:
     log_event(AGENT_NAME, "agent_start", message="Starting report generation")
 
     ranked = state["ranked_candidates"]
+
+    # ── FIX: safely read executive_summary (may be None) ──────────────────
+    executive_summary: str = state.get("executive_summary") or ""
+
+    # ── FIX: convert score to int so 80.0 displays as 80 ──────────────────
+    for candidate in ranked:
+        candidate["score"] = int(candidate["score"])
+
     shortlisted = sum(1 for c in ranked if c["status"] == "Shortlisted")
 
-    # Collect all reasoning text
+    # --- Collect reasoning text for grammar check ---
     all_reasoning = " ".join(
         c["reasoning"] for c in ranked if c.get("reasoning", "").strip()
     )
 
-    # Grammar check via tool
     grammar_issues = 0
     corrected_reasoning_map: dict[str, str] = {}
 
@@ -157,7 +173,7 @@ def run_report_generator(state: MASState) -> MASState:
             message=f"Grammar check complete — {grammar_issues} issue(s) found",
         )
 
-        # Re-run grammar check per candidate for individual correction
+        # Per-candidate correction
         for candidate in ranked:
             raw = candidate.get("reasoning", "").strip()
             if raw:
@@ -175,28 +191,25 @@ def run_report_generator(state: MASState) -> MASState:
         for candidate in ranked:
             corrected_reasoning_map[candidate["name"]] = candidate.get("reasoning", "")
 
-    # Apply corrected reasoning to candidates for the template
     for candidate in ranked:
         candidate["reasoning"] = corrected_reasoning_map.get(
             candidate["name"], candidate.get("reasoning", "")
         )
 
-    # Render HTML
+    # --- Render HTML ---
     template = Template(HTML_TEMPLATE)
-    job_title = (
-        state.get("job_description", {}).get("title", "Software Engineer")
-    )
     html = template.render(
-        job_title=job_title,
+        job_title="Software Engineer",
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
         total=len(ranked),
         shortlisted=shortlisted,
         rejected=len(ranked) - shortlisted,
         grammar_issues=grammar_issues,
+        executive_summary=executive_summary,
         candidates=ranked,
     )
 
-    # Write report
+    # --- Write report ---
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
     Path(OUTPUT_PATH).write_text(html, encoding="utf-8")
 

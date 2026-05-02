@@ -179,8 +179,13 @@ def run_candidate_ranker(state: MASState) -> MASState:
         message="Candidate Ranker starting — reading scored candidates from state",
     )
 
-    # Agent 2 writes results to "match_results"
-    scored_candidates: list[dict[str, Any]] = state.get("match_results") or []
+    # Agent 2 writes results to "match_results"; tests may use "scored_candidates"
+    raw_candidates: list[dict[str, Any]] = (
+        state.get("match_results") or state.get("scored_candidates") or []
+    )
+
+    # Work on copies so the originals in state are never mutated
+    scored_candidates: list[dict[str, Any]] = [dict(c) for c in raw_candidates]
 
     # Normalise missing fields — email may not exist in Agent 2's output
     for candidate in scored_candidates:
