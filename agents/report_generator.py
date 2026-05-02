@@ -1,6 +1,10 @@
+import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from jinja2 import Template
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from state.shared_state import MASState
 from tools.grammar_check_tool import grammar_check
@@ -179,8 +183,11 @@ def run_report_generator(state: MASState) -> MASState:
 
     # Render HTML
     template = Template(HTML_TEMPLATE)
+    job_title = (
+        state.get("job_description", {}).get("title", "Software Engineer")
+    )
     html = template.render(
-        job_title="Software Engineer",
+        job_title=job_title,
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
         total=len(ranked),
         shortlisted=shortlisted,

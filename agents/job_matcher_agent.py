@@ -1,10 +1,12 @@
 # agents/job_matcher_agent.py
+# Agent 2 — Job Matcher
+# Reads candidate_profiles from MASState, scores each one, writes match_results back.
 
 import sys
 import os
 from typing import Dict, Any
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.db_manager import initialize_database, clear_results_for_job
 from tools.score_candidate_tool import score_candidate
@@ -14,7 +16,7 @@ from logs.agent_log import (
     log_tool_error,
     log_state_update
 )
-from shared_state import PipelineState, MatchResult
+from state.shared_state import MASState, MatchResult
 
 
 # ─────────────────────────────────────────────
@@ -65,12 +67,6 @@ def validate_candidate_profile(candidate: Dict[str, Any]) -> bool:
     """
     Validates that a candidate profile has all required fields
     before passing it to the scoring tool.
-
-    Args:
-        candidate (Dict[str, Any]): The candidate profile to validate.
-
-    Returns:
-        bool: True if valid, False if any required field is missing.
     """
     for field in AGENT_CONSTRAINTS["required_profile_fields"]:
         if field not in candidate or candidate[field] is None:
@@ -82,12 +78,6 @@ def validate_job_description(job: Dict[str, Any]) -> bool:
     """
     Validates that the job description has all required fields
     before the agent begins processing.
-
-    Args:
-        job (Dict[str, Any]): The job description to validate.
-
-    Returns:
-        bool: True if valid, False if any required field is missing.
     """
     required = ["job_id", "title", "required_skills", "min_experience_years", "description"]
     for field in required:
@@ -96,38 +86,41 @@ def validate_job_description(job: Dict[str, Any]) -> bool:
     return True
 
 
-def run_job_matcher_agent(state: PipelineState) -> PipelineState:
+def run_job_matcher_agent(state: MASState) -> MASState:
     """
-    Main entry point for the Job Matcher Agent.
+    Agent 2 LangGraph node — Job Matcher.
 
-    Reads candidate profiles and the job description from the pipeline state,
-    scores each candidate using the score_candidate tool, and writes results
-    back into the pipeline state for Agent 3 (Candidate Ranker) to consume.
-
-    This function also initializes the database, clears any previous results
-    for the same job, and handles errors gracefully without stopping the pipeline.
+    Reads candidate_profiles and job_description from MASState,
+    scores each candidate using the score_candidate tool, and writes
+    match_results back into the state for Agent 3 (Candidate Ranker).
 
     Args:
-        state (PipelineState): The global pipeline state containing the job
-                               description and list of candidate profiles
-                               populated by Agent 1.
+        state (MASState): The global pipeline state populated by Agent 1.
 
     Returns:
-        PipelineState: Updated pipeline state with match_results populated,
-                       ready to be passed to the Candidate Ranker Agent.
+        MASState: Updated state with match_results populated.
     """
     print("\n" + "=" * 60)
     print(AGENT_PERSONA)
     print("=" * 60 + "\n")
 
     # ── Step 1: Extract data from state ──
-    job = state["job_description"]
-    candidates = state["candidates"]
+    job = state.get("job_description", {})
+    # Agent 1 writes to "candidate_profiles"; use it
+    candidates = state.get("candidate_profiles") or []
+
+    if not candidates:
+        error_msg = "Job Matcher: No candidate profiles found in state. Did Agent 1 run?"
+        state.setdefault("errors", []).append(error_msg)
+        state.setdefault("match_results", [])
+        log_tool_error("N/A", error_msg)
+        return state
 
     # ── Step 2: Validate job description ──
     if not validate_job_description(job):
         error_msg = "Job description is missing required fields. Agent cannot proceed."
-        state["errors"].append(error_msg)
+        state.setdefault("errors", []).append(error_msg)
+        state.setdefault("match_results", [])
         log_tool_error("N/A", error_msg)
         return state
 
@@ -147,18 +140,20 @@ def run_job_matcher_agent(state: PipelineState) -> PipelineState:
         # Validate profile before scoring
         if not validate_candidate_profile(candidate):
             warning = f"Skipping candidate '{candidate.get('name', 'Unknown')}' — incomplete profile."
-            state["errors"].append(warning)
+            state.setdefault("errors", []).append(warning)
             log_tool_error(candidate.get("candidate_id", "N/A"), warning)
             skipped.append(candidate.get("name", "Unknown"))
             continue
 
         try:
             result: MatchResult = score_candidate(candidate, job)
+            # Carry email forward from the profile (score_candidate doesn't set it)
+            result.setdefault("email", candidate.get("email", ""))
             match_results.append(result)
 
         except RuntimeError as e:
             error_msg = str(e)
-            state["errors"].append(error_msg)
+            state.setdefault("errors", []).append(error_msg)
             log_tool_error(candidate["candidate_id"], error_msg)
             skipped.append(candidate["name"])
 
@@ -186,73 +181,6 @@ def run_job_matcher_agent(state: PipelineState) -> PipelineState:
     if skipped:
         print(f"\n⚠️  Skipped {len(skipped)} candidate(s): {skipped}")
 
-    print(f"\n Job Matcher Agent finished. Scored {len(match_results)}/{len(candidates)} candidates.")
+    print(f"\n✅ Job Matcher Agent finished. Scored {len(match_results)}/{len(candidates)} candidates.")
 
     return state
-
-# ─────────────────────────────────────────────
-# LANGGRAPH NODE WRAPPER
-# ─────────────────────────────────────────────
-
-from langgraph.graph import StateGraph, END
-from typing import Literal
-
-
-def job_matcher_node(state: PipelineState) -> PipelineState:
-    """
-    LangGraph node wrapper for the Job Matcher Agent.
-    This function is registered as a node in the LangGraph pipeline.
-
-    Args:
-        state (PipelineState): The current global pipeline state.
-
-    Returns:
-        PipelineState: Updated state after job matching is complete.
-    """
-    return run_job_matcher_agent(state)
-
-
-def should_continue(state: PipelineState) -> Literal["continue", "stop"]:
-    """
-    LangGraph conditional edge function.
-    Determines whether the pipeline should continue to Agent 3
-    or stop due to errors.
-
-    Args:
-        state (PipelineState): The current pipeline state.
-
-    Returns:
-        Literal["continue", "stop"]: Routing decision.
-    """
-    if not state["match_results"]:
-        return "stop"
-    return "continue"
-
-
-def build_job_matcher_graph() -> StateGraph:
-    """
-    Builds and returns the LangGraph StateGraph for the Job Matcher Agent.
-    Can be used standalone for testing or merged into the full pipeline graph.
-
-    Returns:
-        StateGraph: Compiled LangGraph graph with job matcher node.
-    """
-    graph = StateGraph(PipelineState)
-
-    # Add the job matcher as a node
-    graph.add_node("job_matcher", job_matcher_node)
-
-    # Set entry point
-    graph.set_entry_point("job_matcher")
-
-    # Add conditional edge
-    graph.add_conditional_edges(
-        "job_matcher",
-        should_continue,
-        {
-            "continue": END,
-            "stop": END
-        }
-    )
-
-    return graph.compile()

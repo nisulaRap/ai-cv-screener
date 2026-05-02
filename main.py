@@ -1,258 +1,219 @@
-# main.py - Merged version
+# main.py
+# Entry point for the AI CV Screener Multi-Agent System.
+#
+# Pipeline (sequential LangGraph nodes):
+#   Agent 1: Document Parser    — reads CVs → candidate_profiles
+#   Agent 2: Job Matcher        — scores profiles → match_results (+ DB)
+#   Agent 3: Candidate Ranker   — sorts & labels → ranked_candidates
+#   Agent 4: Report Generator   — grammar-checks & writes HTML report
 
 import sys
 import os
+import json
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Ensure the project root is on sys.path so all package imports resolve
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# ─────────────────────────────────────────────
-# Imports from both implementations
-# ─────────────────────────────────────────────
 from langgraph.graph import StateGraph, END
+
 from state.shared_state import MASState
-from agents.report_generator import run_report_generator
-from agents.parser_agent import run_document_parser  # ← ADD THIS LINE
-from agents.job_matcher_agent import run_job_matcher_agent, build_job_matcher_graph
-from shared_state import PipelineState, JobDescription, CandidateProfile
-from utils.parser_adapter import load_candidates_from_parsed_json
+from agents.parser_agent      import run_document_parser
+from agents.job_matcher_agent import run_job_matcher_agent
+from agents.ranker_agent      import run_candidate_ranker
+from agents.report_generator  import run_report_generator
 
 
 # ─────────────────────────────────────────────
-# SAMPLE JOB DESCRIPTION
+# Build the 4-node LangGraph pipeline
 # ─────────────────────────────────────────────
-SAMPLE_JOB: JobDescription = {
-    "job_id": "job_001",
-    "title": "Senior Python Developer",
-    "required_skills": [
-        "Python", "REST APIs", "SQL", "Git"
-    ],
-    "preferred_skills": [
-        "FastAPI", "Docker", "PostgreSQL", "Redis"
-    ],
-    "min_experience_years": 3.0,
-    "education_requirement": "Bachelor's degree in Computer Science or related field",
-    "description": (
-        "We are looking for a Senior Python Developer to join our backend team. "
-        "You will design and build scalable REST APIs, work with SQL databases, "
-        "and collaborate with frontend teams. Experience with FastAPI and Docker "
-        "is a strong advantage. You must be comfortable working in an agile environment."
-    )
-}
 
+def build_pipeline() -> StateGraph:
+    """
+    Assembles and compiles the full MAS pipeline as a LangGraph StateGraph.
 
-# ─────────────────────────────────────────────
-# SAMPLE CANDIDATES
-# ─────────────────────────────────────────────
-SAMPLE_CANDIDATES = [
-    CandidateProfile(
-        candidate_id="candidate_001",
-        name="Alice Fernando",
-        email="alice@example.com",
-        skills=["Python", "FastAPI", "PostgreSQL", "Docker", "Git", "REST APIs", "SQL"],
-        experience_years=5.0,
-        education="Bachelor's in Computer Science",
-        raw_text="Alice Fernando - Senior Python Developer with 5 years experience..."
-    ),
-    CandidateProfile(
-        candidate_id="candidate_002",
-        name="Bob Perera",
-        email="bob@example.com",
-        skills=["Java", "Spring Boot", "MySQL", "Git"],
-        experience_years=4.0,
-        education="Bachelor's in Information Technology",
-        raw_text="Bob Perera - Java developer with 4 years experience..."
-    ),
-    CandidateProfile(
-        candidate_id="candidate_003",
-        name="Chamari Silva",
-        email="chamari@example.com",
-        skills=["Python", "SQL", "Git", "REST APIs"],
-        experience_years=2.0,
-        education="Bachelor's in Computer Science",
-        raw_text="Chamari Silva - Python developer with 2 years experience..."
-    ),
-    CandidateProfile(
-        candidate_id="candidate_004",
-        name="David Rajapaksa",
-        email="david@example.com",
-        skills=["Python", "FastAPI", "Docker", "Redis", "PostgreSQL", "SQL", "Git", "REST APIs"],
-        experience_years=7.0,
-        education="Master's in Software Engineering",
-        raw_text="David Rajapaksa - Senior engineer with 7 years experience..."
-    ),
-    CandidateProfile(
-        candidate_id="candidate_005",
-        name="Emma Wickramasinghe",
-        email="emma@example.com",
-        skills=["HTML", "CSS", "JavaScript"],
-        experience_years=1.0,
-        education="Diploma in Web Design",
-        raw_text="Emma Wickramasinghe - Frontend developer with 1 year experience..."
-    )
-]
+    Nodes (in order):
+        parser_agent      → Agent 1: Document Parser
+        job_matcher       → Agent 2: Job Matcher
+        candidate_ranker  → Agent 3: Candidate Ranker
+        report_generator  → Agent 4: Report Generator
 
-
-# ─────────────────────────────────────────────
-# Option A: LangGraph Pipeline (from incoming)
-# ─────────────────────────────────────────────
-def build_langgraph_pipeline():
-    """Build the LangGraph pipeline connecting the agents."""
+    Returns:
+        Compiled LangGraph app ready to invoke.
+    """
     graph = StateGraph(MASState)
 
-    graph.add_node("parser_agent", run_document_parser)
+    # Register all four agents as nodes
+    graph.add_node("parser_agent",     run_document_parser)
+    graph.add_node("job_matcher",      run_job_matcher_agent)
+    graph.add_node("candidate_ranker", run_candidate_ranker)
     graph.add_node("report_generator", run_report_generator)
 
+    # Wire them sequentially
     graph.set_entry_point("parser_agent")
-    graph.add_edge("parser_agent", "report_generator")
+    graph.add_edge("parser_agent",     "job_matcher")
+    graph.add_edge("job_matcher",      "candidate_ranker")
+    graph.add_edge("candidate_ranker", "report_generator")
     graph.add_edge("report_generator", END)
 
     return graph.compile()
 
 
-def run_langgraph_pipeline():
-    """Run the full LangGraph MAS pipeline."""
-    initial_state: MASState = {
-        "job_description_path": "data/job_description.json",
-        "cv_folder_path": "data/cvs",
-        "candidate_profiles": None,
-        "scored_candidates": None,
-        "ranked_candidates": None,
-        "executive_summary": None,
-        "report_path": None,
-        "logs": [],
-        "errors": [],
-    }
-
-    print("🚀 Starting CV Screener MAS (LangGraph Pipeline)...")
-    app = build_langgraph_pipeline()
-    final_state = app.invoke(initial_state)
-
-    print("\n✅ Pipeline Complete!")
-    print(f"📄 Report: {final_state['report_path']}")
-
-    if final_state.get("ranked_candidates"):
-        print(f"👥 Candidates processed: {len(final_state['ranked_candidates'])}")
-
-    print("\n📝 Agent Logs:")
-    for log in final_state["logs"]:
-        print(f"  • {log}")
-
-    if final_state["errors"]:
-        print("\n⚠️  Errors:")
-        for err in final_state["errors"]:
-            print(f"  • {err}")
-
-
 # ─────────────────────────────────────────────
-# Option B: Job Matcher Pipeline (from current)
+# Load job description from JSON
 # ─────────────────────────────────────────────
-def build_initial_state(use_real_data: bool = False) -> PipelineState:
+
+def load_job_description(path: str) -> dict:
     """
-    Builds the initial pipeline state.
-    
-    If use_real_data=True, loads candidates from Agent 1's parsed.json output.
-    If use_real_data=False, uses built-in sample candidates for testing.
+    Loads the job description from a JSON file.
 
     Args:
-        use_real_data (bool): Whether to load from parsed.json or use sample data.
+        path: Path to job_description.json
 
     Returns:
-        PipelineState: Initial state ready for the Job Matcher Agent.
+        Parsed job description dict.
+
+    Raises:
+        SystemExit: If the file is missing or malformed.
     """
-    if use_real_data:
-        # ── Load from Agent 1's output ──
-        parsed_json_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data", "parsed.json"
-        )
-        candidates = load_candidates_from_parsed_json(parsed_json_path)
-    else:
-        # ── Use sample data for standalone testing ──
-        candidates = SAMPLE_CANDIDATES
+    abs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    if not os.path.exists(abs_path):
+        print(f"❌  Job description file not found: {abs_path}")
+        print("    Create data/job_description.json before running the pipeline.")
+        sys.exit(1)
 
-    return PipelineState(
-        job_description=SAMPLE_JOB,
-        candidates=candidates,
-        match_results=[],
-        ranked_candidates=[],
-        report_path=None,
-        errors=[]
-    )
+    with open(abs_path, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"❌  Malformed JSON in {abs_path}: {e}")
+            sys.exit(1)
 
 
-def run_job_matcher_pipeline():
-    """Run the Job Matcher Agent pipeline."""
-    print("\n🚀 Starting CV Screener Pipeline — Job Matcher Agent")
+# ─────────────────────────────────────────────
+# Run the pipeline
+# ─────────────────────────────────────────────
+
+def run_pipeline(
+    job_description_path: str = "data/job_description.json",
+    cv_folder_path: str = "data/cvs",
+) -> MASState:
+    """
+    Runs the full 4-agent CV screener pipeline end-to-end.
+
+    Steps:
+        1. Load job description from JSON.
+        2. Build the LangGraph pipeline.
+        3. Invoke with initial MASState.
+        4. Print summary of results.
+
+    Args:
+        job_description_path: Relative path to the job description JSON.
+        cv_folder_path:        Relative path to the folder containing CV files.
+
+    Returns:
+        The final MASState after all agents have run.
+    """
+    print("\n" + "=" * 60)
+    print("🚀  AI CV Screener — Multi-Agent System")
     print("=" * 60)
+
+    # Load the job description once at startup
+    job_description = load_job_description(job_description_path)
+    print(f"\n📋  Job Title   : {job_description.get('title', 'N/A')}")
+    print(f"📁  CV Folder   : {cv_folder_path}")
+    print(f"🔧  Job ID      : {job_description.get('job_id', 'N/A')}")
 
     # Build initial state
-    state = build_initial_state(use_real_data=False)
+    initial_state: MASState = {
+        "job_description_path": job_description_path,
+        "cv_folder_path":       cv_folder_path,
+        "job_description":      job_description,
+        "candidate_profiles":   [],
+        "match_results":        [],
+        "ranked_candidates":    [],
+        "executive_summary":    None,
+        "report_path":          None,
+        "logs":                 [],
+        "errors":               [],
+    }
 
-    print(f"\n📋 Job Title     : {state['job_description']['title']}")
-    print(f"👥 Candidates    : {len(state['candidates'])}")
-    print("\nRunning Job Matcher Agent...\n")
+    print("\n⚙️   Building pipeline...")
+    app = build_pipeline()
 
-    # Run your agent
-    updated_state = run_job_matcher_agent(state)
+    print("▶️   Running agents...\n")
+    final_state: MASState = app.invoke(initial_state)
 
-    from agents.job_matcher_agent import build_job_matcher_graph
-
-    # Build and run via LangGraph
-    graph = build_job_matcher_graph()
-    updated_state = graph.invoke(build_initial_state())
-
-    # ── Print Results ──
+    # ── Summary ──────────────────────────────
     print("\n" + "=" * 60)
-    print("📊 MATCH RESULTS SUMMARY")
+    print("✅  Pipeline Complete!")
     print("=" * 60)
 
-    if not updated_state["match_results"]:
-        print("❌ No results were produced.")
-    else:
-        # Sort by score descending for display
-        sorted_results = sorted(
-            updated_state["match_results"],
-            key=lambda x: x["score"],
-            reverse=True
+    n_parsed  = len(final_state.get("candidate_profiles", []))
+    n_scored  = len(final_state.get("match_results", []))
+    n_ranked  = len(final_state.get("ranked_candidates", []))
+    n_short   = sum(
+        1 for c in final_state.get("ranked_candidates", [])
+        if c.get("status") == "Shortlisted"
+    )
+    report    = final_state.get("report_path")
+
+    print(f"\n  📄  CVs parsed        : {n_parsed}")
+    print(f"  🎯  Candidates scored : {n_scored}")
+    print(f"  🏆  Candidates ranked : {n_ranked}")
+    print(f"  ✅  Shortlisted       : {n_short}")
+    print(f"  ❌  Rejected          : {n_ranked - n_short}")
+
+    if report:
+        abs_report = os.path.abspath(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), report)
         )
-
-        for i, result in enumerate(sorted_results, 1):
-            print(f"\n#{i} {result['name']}")
-            print(f"   Score         : {result['score']}/100")
-            print(f"   Matched Skills: {', '.join(result['matched_skills'])}")
-            print(f"   Missing Skills: {', '.join(result['missing_skills'])}")
-            print(f"   Reasoning     : {result['reasoning']}")
-
-    # ── Print Errors ──
-    if updated_state["errors"]:
-        print("\n⚠️  ERRORS DURING RUN:")
-        for err in updated_state["errors"]:
-            print(f"   - {err}")
-
-    print("\n✅ Pipeline run complete. Check logs/job_matcher.log for full details.")
-    print("=" * 60)
-
-
-# ─────────────────────────────────────────────
-# MAIN ENTRY POINT - Choose which pipeline to run
-# ─────────────────────────────────────────────
-def main():
-    """Main entry point - select which pipeline to execute."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='CV Screener Pipeline')
-    parser.add_argument('--pipeline', choices=['mas', 'matcher'], 
-                        default='matcher',
-                        help='Choose pipeline to run: mas (LangGraph) or matcher (Job Matcher)')
-    
-    args = parser.parse_args()
-    
-    if args.pipeline == 'mas':
-        # Fix: You need to import or define run_document_parser
-        # from agents.parser_agent import run_document_parser
-        run_langgraph_pipeline()
+        print(f"\n  📊  Report saved to   : {abs_report}")
     else:
-        run_job_matcher_pipeline()
+        print("\n  ⚠️   Report was NOT generated — check errors below.")
+
+    if final_state.get("executive_summary"):
+        print(f"\n  📝  Executive Summary:\n  {final_state['executive_summary']}")
+
+    if final_state.get("logs"):
+        print("\n  📋  Agent Logs:")
+        for log in final_state["logs"]:
+            print(f"        • {log}")
+
+    if final_state.get("errors"):
+        print("\n  ⚠️   Errors encountered:")
+        for err in final_state["errors"]:
+            print(f"        • {err}")
+
+    print("\n" + "=" * 60 + "\n")
+    return final_state
+
+
+# ─────────────────────────────────────────────
+# Entry point
+# ─────────────────────────────────────────────
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="AI CV Screener — 4-agent MAS pipeline"
+    )
+    parser.add_argument(
+        "--job",
+        default="data/job_description.json",
+        help="Path to the job description JSON file (default: data/job_description.json)",
+    )
+    parser.add_argument(
+        "--cvs",
+        default="data/cvs",
+        help="Path to the folder containing CV files (default: data/cvs)",
+    )
+    args = parser.parse_args()
+
+    run_pipeline(
+        job_description_path=args.job,
+        cv_folder_path=args.cvs,
+    )
 
 
 if __name__ == "__main__":

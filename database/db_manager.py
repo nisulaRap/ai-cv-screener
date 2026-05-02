@@ -5,7 +5,7 @@ import json
 import os
 from typing import List, Optional
 from datetime import datetime
-from shared_state import MatchResult
+from state.shared_state import MatchResult
 
 
 # Path to the SQLite database file

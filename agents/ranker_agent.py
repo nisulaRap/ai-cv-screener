@@ -4,11 +4,17 @@ Uses ranker_tool for deterministic sorting and Ollama LLM for intelligent
 reasoning about each candidate's ranking decision and shortlist justification.
 """
 
+import sys
+import os
 from typing import Any
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from tools.ranker_tool import ranker_tool
+from state.shared_state import MASState
 
 AGENT_NAME   = "CandidateRanker"
 OLLAMA_MODEL = "llama3:8b"
@@ -140,7 +146,7 @@ Keep it professional, concise, and suitable for a senior HR manager."""
     return response.content.strip()
 
 
-def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
+def run_candidate_ranker(state: MASState) -> MASState:
     """
     Agent 3 — Candidate Ranker node for LangGraph.
 
@@ -173,10 +179,8 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
         message="Candidate Ranker starting — reading scored candidates from state",
     )
 
-    # Agent 2 stores results as "match_results" — fall back to "scored_candidates"
-    scored_candidates: list[dict[str, Any]] = (
-        state.get("match_results") or state.get("scored_candidates", [])
-    )
+    # Agent 2 writes results to "match_results"
+    scored_candidates: list[dict[str, Any]] = state.get("match_results") or []
 
     # Normalise missing fields — email may not exist in Agent 2's output
     for candidate in scored_candidates:
@@ -188,7 +192,7 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
     # Guard: nothing to rank
     if not scored_candidates:
         error_msg = "CandidateRanker: No scored candidates found in state."
-        state["errors"].append(error_msg)
+        state.setdefault("errors", []).append(error_msg)
         state["ranked_candidates"] = []
         log_event(AGENT_NAME, "error", message=error_msg)
         return state
@@ -268,7 +272,7 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
         except Exception as e:
             # Log the real error and keep original reasoning as fallback
             error_msg = f"LLM reasoning failed for {candidate['name']}: {e}"
-            state["errors"].append(error_msg)
+            state.setdefault("errors", []).append(error_msg)
             log_event(AGENT_NAME, "error", message=error_msg)
 
     # Generate executive summary
@@ -283,7 +287,7 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
         )
     except Exception as e:
         error_msg = f"Executive summary generation failed: {e}"
-        state["errors"].append(error_msg)
+        state.setdefault("errors", []).append(error_msg)
         log_event(AGENT_NAME, "error", message=error_msg)
         state["executive_summary"] = (
             f"Screening complete. "
@@ -302,7 +306,7 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
         f"{shortlisted_count} Shortlisted, "
         f"{len(ranked_candidates) - shortlisted_count} Rejected."
     )
-    state["logs"].append(summary)
+    state.setdefault("logs", []).append(summary)
 
     log_event(
         AGENT_NAME, "agent_end",

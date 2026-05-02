@@ -4,7 +4,7 @@ import json
 import os
 import re
 from typing import List
-from shared_state import CandidateProfile
+from state.shared_state import CandidateProfile
 
 
 def parse_experience_years(experience_str: str) -> float:

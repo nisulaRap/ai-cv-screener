@@ -16,11 +16,11 @@ from logs.agent_log import (
     log_score_result,
     log_tool_error
 )
-from shared_state import CandidateProfile, JobDescription, MatchResult
+from state.shared_state import CandidateProfile, JobDescription, MatchResult
 
 
 # Initialize the Ollama LLM once (reused across all calls)
-llm = OllamaLLM(model="llama3.2", temperature=0.1)
+llm = OllamaLLM(model="llama3:8b", temperature=0.1)
 
 
 def build_scoring_prompt(candidate: CandidateProfile, job: JobDescription) -> str:
