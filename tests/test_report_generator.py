@@ -1,19 +1,10 @@
-"""
-Tests for Agent 4 — Report Generator.
-Validates file creation, content correctness, grammar tool integration,
-and graceful fallback when the grammar API is unavailable.
-"""
 import pytest
 from pathlib import Path
 from unittest.mock import patch, call
 from agents.report_generator import run_report_generator
 from state.shared_state import MASState
 
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 def make_state(candidates: list = None) -> MASState:
-    """Build a minimal MASState with optional custom ranked candidates."""
     return {
         "job_description_path": "",
         "cv_folder_path": "",
@@ -22,22 +13,27 @@ def make_state(candidates: list = None) -> MASState:
         "ranked_candidates": candidates or [
             {
                 "rank": 1, "name": "Alice Perera",
-                "email": "alice@test.com", "score": 88,
-                "status": "Shortlisted", "reasoning": "Strong Python and SQL skills.",
+                "email": "alice@test.com",
+                "score": 80.0,              # ← now float like Agent 3 sends
+                "status": "Shortlisted",
+                "reasoning": "Strong Python and SQL skills.",
             },
             {
                 "rank": 2, "name": "Bob Fernando",
-                "email": "bob@test.com", "score": 45,
-                "status": "Rejected", "reasoning": "Missing key required skills.",
+                "email": "bob@test.com",
+                "score": 45.0,              # ← float
+                "status": "Rejected",
+                "reasoning": "Missing key required skills.",
             },
         ],
+        "executive_summary": "2 of 3 candidates shortlisted. Top candidate shows strong technical alignment.",  # ← NEW
         "report_path": None,
         "logs": [],
         "errors": [],
     }
 
 
-# ── Test 1: Report file must be created ──────────────────────────────────────
+# Report file must be created
 
 @patch("agents.report_generator.grammar_check")
 def test_report_file_is_created(mock_grammar):
@@ -53,7 +49,7 @@ def test_report_file_is_created(mock_grammar):
     assert Path(result["report_path"]).exists(), "HTML file must exist on disk"
 
 
-# ── Test 2: Report must contain all candidate names ───────────────────────────
+# Report must contain all candidate names
 
 @patch("agents.report_generator.grammar_check")
 def test_report_contains_all_candidate_names(mock_grammar):
@@ -66,7 +62,7 @@ def test_report_contains_all_candidate_names(mock_grammar):
     assert "Bob Fernando" in html
 
 
-# ── Test 3: Shortlisted/Rejected labels must be correct ──────────────────────
+# Shortlisted/Rejected labels must be correct
 
 @patch("agents.report_generator.grammar_check")
 def test_report_has_correct_status_labels(mock_grammar):
@@ -79,7 +75,7 @@ def test_report_has_correct_status_labels(mock_grammar):
     assert "pill-rejected" in html
 
 
-# ── Test 4: Grammar check tool must always be called ─────────────────────────
+# Grammar check tool must always be called 
 
 @patch("agents.report_generator.grammar_check")
 def test_grammar_check_tool_is_called(mock_grammar):
@@ -90,7 +86,7 @@ def test_grammar_check_tool_is_called(mock_grammar):
     assert mock_grammar.called, "grammar_check must be called by the agent"
 
 
-# ── Test 5: Graceful fallback when grammar API fails ─────────────────────────
+# Graceful fallback when grammar API fails
 
 @patch("agents.report_generator.grammar_check", side_effect=RuntimeError("API timeout"))
 def test_report_generated_even_if_grammar_api_fails(mock_grammar):
@@ -102,7 +98,7 @@ def test_report_generated_even_if_grammar_api_fails(mock_grammar):
     assert any("Grammar check skipped" in e for e in result["errors"])
 
 
-# ── Test 6: Scores must appear in the HTML ───────────────────────────────────
+# Scores must appear in the HTML
 
 @patch("agents.report_generator.grammar_check")
 def test_report_contains_scores(mock_grammar):
@@ -115,7 +111,7 @@ def test_report_contains_scores(mock_grammar):
     assert "45" in html
 
 
-# ── Test 7: Empty candidate list edge case ───────────────────────────────────
+# Empty candidate list edge case
 
 @patch("agents.report_generator.grammar_check")
 def test_report_handles_empty_candidate_list(mock_grammar):
@@ -125,3 +121,15 @@ def test_report_handles_empty_candidate_list(mock_grammar):
 
     assert result["report_path"] is not None
     assert Path(result["report_path"]).exists()
+
+# Test for executive summary
+
+@patch("agents.report_generator.grammar_check")
+def test_report_contains_executive_summary(mock_grammar):
+    """Executive summary from Agent 3 must appear in the HTML report."""
+    mock_grammar.return_value = {"corrected_text": "", "issues_found": 0, "matches": []}
+    result = run_report_generator(make_state())
+
+    html = Path(result["report_path"]).read_text(encoding="utf-8")
+    assert "Executive Summary" in html
+    assert "2 of 3 candidates shortlisted" in html

@@ -29,7 +29,8 @@ class MASState(TypedDict):
     cv_folder_path: str
     candidate_profiles: List[Any]
     scored_candidates: List[Any]
-    ranked_candidates: List[RankedCandidate]
+    ranked_candidates: Optional[list[RankedCandidate]]
+    executive_summary: Optional[str]
     report_path: Optional[str]
     logs: List[str]
     errors: List[str]
