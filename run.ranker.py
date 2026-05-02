@@ -1,3 +1,22 @@
+"""
+Debug runner — tests LLM connection before running the full agent.
+Run this first to confirm Ollama is responding properly.
+"""
+
+from langchain_ollama import ChatOllama
+from langchain_core.messages import HumanMessage, SystemMessage
+
+print("Step 1: Testing Ollama connection...")
+try:
+    llm = ChatOllama(model="phi3:latest", temperature=0.4)
+    response = llm.invoke([HumanMessage(content="Say exactly: LLM IS WORKING")])
+    print(f"✅ LLM response: {response.content}")
+except Exception as e:
+    print(f"❌ LLM connection failed: {e}")
+    print("Make sure 'ollama serve' is running in another terminal")
+    exit(1)
+
+print("\nStep 2: Running full Candidate Ranker agent...")
 from agents.ranker_agent import run_candidate_ranker
 
 state = {
@@ -28,4 +47,8 @@ print("\n========== EXECUTIVE SUMMARY ==========")
 print(result.get("executive_summary", "No summary generated."))
 
 print("\n========== ERRORS ==========")
-print(result["errors"] if result["errors"] else "None")
+if result["errors"]:
+    for e in result["errors"]:
+        print(f"  ❌ {e}")
+else:
+    print("  None")

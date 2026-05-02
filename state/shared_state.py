@@ -9,7 +9,7 @@ class RankedCandidate(TypedDict, total=False):
     score: float
     status: str
     reasoning: str
-
+ 
 
 class MASState(TypedDict):
     """

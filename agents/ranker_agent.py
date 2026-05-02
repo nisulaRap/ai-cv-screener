@@ -11,7 +11,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from tools.ranker_tool import ranker_tool
 
 AGENT_NAME   = "CandidateRanker"
-#OLLAMA_MODEL = "llama3:8b"
 OLLAMA_MODEL = "phi3:latest"
 
 # ---------------------------------------------------------------------------
@@ -22,12 +21,13 @@ Your role is to provide clear, professional, and objective reasoning for candida
 ranking decisions based on their match scores against job requirements.
 
 Rules you must follow:
-- Be concise: 1-2 sentences per candidate reasoning.
+- Be concise: 2-3 sentences per candidate reasoning.
 - Be professional and unbiased — focus only on skills and experience fit.
 - Never invent skills or qualifications not mentioned in the input.
 - Never change the scores or rankings — those are already decided.
 - Always justify WHY a candidate is Shortlisted or Rejected based on their score.
 - Do not use bullet points — write in plain prose only.
+- Always respond with fresh, expanded reasoning — never repeat the input text verbatim.
 """
 
 
@@ -46,7 +46,10 @@ def _generate_candidate_reasoning(
         job_context: A brief description of what the job requires.
 
     Returns:
-        A professional 1-2 sentence reasoning string from the LLM.
+        A professional 2-3 sentence reasoning string from the LLM.
+
+    Raises:
+        RuntimeError: If the LLM call fails or returns an empty response.
     """
     prompt = f"""A candidate has been evaluated for the following position:
 {job_context}
@@ -56,24 +59,24 @@ Candidate details:
 - Match Score: {candidate['score']}/100
 - Ranking Position: #{candidate['rank']}
 - Decision: {candidate['status']}
-- Initial assessment from job matcher: {candidate.get('reasoning', 'No initial assessment provided.')}
+- Raw assessment from job matcher: "{candidate.get('reasoning', 'No assessment provided.')}"
 
-Write 1-2 professional sentences explaining why this candidate received this
-decision. Focus on their score relative to the role requirements."""
+Write 2-3 professional sentences explaining this candidate's ranking decision.
+Expand on the raw assessment with professional HR language. 
+Do NOT repeat the raw assessment word for word — rewrite it professionally.
+Explain what their score means relative to the role and why the decision was made."""
 
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=prompt),
     ]
 
-    try:
-        response = llm.invoke(messages)
-        return response.content.strip()
-    except Exception:
-        return candidate.get(
-            "reasoning",
-            f"Ranked #{candidate['rank']} with a score of {candidate['score']}/100."
-        )
+    response = llm.invoke(messages)
+
+    if not response or not response.content or not response.content.strip():
+        raise RuntimeError(f"LLM returned empty response for candidate {candidate['name']}")
+
+    return response.content.strip()
 
 
 def _generate_executive_summary(
@@ -87,48 +90,54 @@ def _generate_executive_summary(
 
     Args:
         llm: The ChatOllama instance to use for generation.
-        ranked_candidates: The full list of ranked candidates.
+        ranked_candidates: The full list of ranked candidates with LLM reasoning.
         job_context: A brief description of what the job requires.
 
     Returns:
         A professional executive summary string (3-4 sentences).
+
+    Raises:
+        RuntimeError: If the LLM call fails or returns an empty response.
     """
     shortlisted = [c for c in ranked_candidates if c["status"] == "Shortlisted"]
     rejected    = [c for c in ranked_candidates if c["status"] == "Rejected"]
 
-    shortlisted_summary = ", ".join(
-        f"{c['name']} (score: {c['score']})" for c in shortlisted
+    shortlisted_lines = "\n".join(
+        f"  - {c['name']} (score: {c['score']}/100): {c['reasoning']}"
+        for c in shortlisted
     )
-    rejected_summary = ", ".join(
-        f"{c['name']} (score: {c['score']})" for c in rejected
+    rejected_lines = "\n".join(
+        f"  - {c['name']} (score: {c['score']}/100): {c['reasoning']}"
+        for c in rejected
     )
 
-    prompt = f"""You are writing an executive summary for an HR manager reviewing
+    prompt = f"""Write a professional executive summary for an HR manager reviewing 
 a CV screening result for the following position:
 {job_context}
 
-Screening results:
-- Total candidates evaluated: {len(ranked_candidates)}
-- Shortlisted ({len(shortlisted)}): {shortlisted_summary}
-- Rejected ({len(rejected)}): {rejected_summary}
+SHORTLISTED candidates ({len(shortlisted)}):
+{shortlisted_lines}
 
-Write a 3-4 sentence professional executive summary explaining the overall
-screening outcome, the quality of the shortlisted candidates, and a brief
-note on why the rejected candidates did not make the cut."""
+REJECTED candidates ({len(rejected)}):
+{rejected_lines}
+
+Write 3-4 sentences covering:
+1. The overall screening outcome
+2. Why the shortlisted candidates stand out
+3. The common reasons for rejection
+Keep it professional, concise, and suitable for a senior HR manager."""
 
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=prompt),
     ]
 
-    try:
-        response = llm.invoke(messages)
-        return response.content.strip()
-    except Exception:
-        return (
-            f"Screening complete. {len(shortlisted)} of {len(ranked_candidates)} "
-            f"candidates were shortlisted based on their match scores."
-        )
+    response = llm.invoke(messages)
+
+    if not response or not response.content or not response.content.strip():
+        raise RuntimeError("LLM returned empty response for executive summary")
+
+    return response.content.strip()
 
 
 def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
@@ -213,9 +222,8 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
 
     # Build job context from state
     job_description_path = state.get("job_description_path", "")
-    job_context = "Software Engineer role requiring strong technical skills and relevant experience."
+    job_context = "Software Engineer role requiring strong technical skills, Python proficiency, and relevant industry experience."
 
-    # Try to read actual job description if available
     try:
         import json, os
         if job_description_path and os.path.exists(job_description_path):
@@ -227,18 +235,19 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
                     f"Required skills: {', '.join(job_data.get('required_skills', []))}"
                 )
     except Exception:
-        pass  # Use default job context if file can't be read
+        pass
 
-    try:
-        llm = ChatOllama(model=OLLAMA_MODEL, temperature=0.3)
+    # Initialise LLM — temperature=0.4 gives slightly varied, natural responses
+    llm = ChatOllama(model=OLLAMA_MODEL, temperature=0.4)
 
-        # Generate per-candidate reasoning
-        log_event(
-            AGENT_NAME, "llm_call",
-            message=f"Generating LLM reasoning for {len(ranked_candidates)} candidates",
-        )
+    # Generate per-candidate reasoning
+    log_event(
+        AGENT_NAME, "llm_call",
+        message=f"Generating LLM reasoning for {len(ranked_candidates)} candidates",
+    )
 
-        for candidate in ranked_candidates:
+    for candidate in ranked_candidates:
+        try:
             reasoning = _generate_candidate_reasoning(llm, candidate, job_context)
             candidate["reasoning"] = reasoning
             log_event(
@@ -246,8 +255,14 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
                 outputs={"candidate": candidate["name"], "reasoning": reasoning},
                 message=f"Reasoning generated for {candidate['name']}",
             )
+        except Exception as e:
+            # Log the real error and keep original reasoning as fallback
+            error_msg = f"LLM reasoning failed for {candidate['name']}: {e}"
+            state["errors"].append(error_msg)
+            log_event(AGENT_NAME, "error", message=error_msg)
 
-        # Generate executive summary
+    # Generate executive summary
+    try:
         log_event(AGENT_NAME, "llm_call", message="Generating executive summary")
         executive_summary = _generate_executive_summary(llm, ranked_candidates, job_context)
         state["executive_summary"] = executive_summary
@@ -256,12 +271,15 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
             outputs={"executive_summary": executive_summary},
             message="Executive summary generated successfully",
         )
-
     except Exception as e:
-        error_msg = f"CandidateRanker: LLM reasoning failed — {e}"
+        error_msg = f"Executive summary generation failed: {e}"
         state["errors"].append(error_msg)
         log_event(AGENT_NAME, "error", message=error_msg)
-        # Don't return early — ranking still succeeded, just no LLM reasoning
+        state["executive_summary"] = (
+            f"Screening complete. "
+            f"{sum(1 for c in ranked_candidates if c['status'] == 'Shortlisted')} "
+            f"of {len(ranked_candidates)} candidates were shortlisted."
+        )
 
     # ------------------------------------------------------------------
     # Step 3 — Write results back to shared state
@@ -279,9 +297,9 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
     log_event(
         AGENT_NAME, "agent_end",
         outputs={
-            "ranked_candidates":  ranked_candidates,
-            "shortlisted_count":  shortlisted_count,
-            "executive_summary":  state.get("executive_summary", ""),
+            "ranked_candidates": ranked_candidates,
+            "shortlisted_count": shortlisted_count,
+            "executive_summary": state.get("executive_summary", ""),
         },
         message=summary,
     )
