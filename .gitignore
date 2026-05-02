@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Ollama / ML models 
+*.bin
+*.gguf
+*.ggml
+
+data/
+
+output/
+agent_trace.jsonl
+
+data/cvs/
+
+.DS_Store
+Thumbs.db
+
+.env
