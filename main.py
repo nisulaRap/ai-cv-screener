@@ -5,8 +5,9 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from agents.job_matcher_agent import run_job_matcher_agent
+from agents.job_matcher_agent import run_job_matcher_agent, build_job_matcher_graph
 from shared_state import PipelineState, JobDescription, CandidateProfile
+from utils.parser_adapter import load_candidates_from_parsed_json
 
 
 # ─────────────────────────────────────────────
@@ -92,18 +93,33 @@ SAMPLE_CANDIDATES = [
 # BUILD INITIAL PIPELINE STATE
 # ─────────────────────────────────────────────
 
-def build_initial_state() -> PipelineState:
+def build_initial_state(use_real_data: bool = False) -> PipelineState:
     """
-    Builds the initial pipeline state with sample data.
-    In the real pipeline, Agent 1 populates 'candidates'
-    and the orchestrator loads the job description from a JSON file.
+    Builds the initial pipeline state.
+    
+    If use_real_data=True, loads candidates from Agent 1's parsed.json output.
+    If use_real_data=False, uses built-in sample candidates for testing.
+
+    Args:
+        use_real_data (bool): Whether to load from parsed.json or use sample data.
 
     Returns:
-        PipelineState: Initial state ready to be passed to Job Matcher Agent.
+        PipelineState: Initial state ready for the Job Matcher Agent.
     """
+    if use_real_data:
+        # ── Load from Agent 1's output ──
+        parsed_json_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data", "parsed.json"
+        )
+        candidates = load_candidates_from_parsed_json(parsed_json_path)
+    else:
+        # ── Use sample data for standalone testing ──
+        candidates = SAMPLE_CANDIDATES
+
     return PipelineState(
         job_description=SAMPLE_JOB,
-        candidates=SAMPLE_CANDIDATES,
+        candidates=candidates,
         match_results=[],
         ranked_candidates=[],
         report_path=None,
@@ -127,7 +143,8 @@ def main() -> None:
     print("=" * 60)
 
     # Build initial state
-    state = build_initial_state()
+    #state = build_initial_state()
+    state = build_initial_state(use_real_data=False)
 
     print(f"\n📋 Job Title     : {state['job_description']['title']}")
     print(f"👥 Candidates    : {len(state['candidates'])}")
