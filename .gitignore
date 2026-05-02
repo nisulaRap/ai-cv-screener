@@ -1,98 +1,66 @@
-<<<<<<< HEAD
-# Python cache files
-__pycache__/
-*.pyc
-*.py[cod]
-*.pyo
-.pytest_cache/
-=======
+# -------------------------
 # Python
+# -------------------------
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .Python
+
+# Packaging
+build/
+dist/
 *.egg
 *.egg-info/
-dist/
-build/
->>>>>>> origin/Vihanga
+.eggs/
 
-# Virtual environments
+# -------------------------
+# Virtual Environments
+# -------------------------
 venv/
 .venv/
 env/
-<<<<<<< HEAD
-VENV/
-env/
 ENV/
+VENV/
 
-# Database files
-database/cv_screener.db
-data/scores.db
+# -------------------------
+# Environment Variables
+# -------------------------
+.env
+.env.local
+.env.*.local
+
+# -------------------------
+# Database Files
+# -------------------------
 *.db
 *.sqlite
 *.sqlite3
 
+# -------------------------
 # Logs
-logs/job_matcher.log
-=======
+# -------------------------
+logs/
+*.log
 
-# Pytest
+# -------------------------
+# Test / Coverage
+# -------------------------
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
-# VS Code
-.vscode/
+# -------------------------
+# Type Checking / Lint Cache
+# -------------------------
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
 
-# Outputs — don't commit generated reports
-outputs/
-
-# Logs — don't commit agent logs
-logs/
->>>>>>> origin/Vihanga
-*.log
-
-# Environment variables
-.env
-.env.local
-<<<<<<< HEAD
-.env.*.local
-
-# Ollama / ML models (too large for git)
-*.bin
-*.gguf
-*.ggml
-*.onnx
-*.pt
-*.pth
-
-# Output files (generated, not source)
-output/
-*.jsonl
-agent_trace.jsonl
-*.html
-*.pdf
-
-# CV files (may contain private personal data)
-data/cvs/
-*.pdf
-*.docx
-*.doc
-=======
->>>>>>> origin/Vihanga
-
-# OS files
-.DS_Store
-Thumbs.db
-<<<<<<< HEAD
-.directory
-*.swp
-*.swo
-*~
-
-# IDE files
+# -------------------------
+# IDE / Editor Files
+# -------------------------
 .vscode/
 .idea/
 *.iml
@@ -100,45 +68,41 @@ Thumbs.db
 .classpath
 .settings/
 
-# Coverage reports
-.coverage
-htmlcov/
-.tox/
-.mypy_cache/
-.ruff_cache/
+# -------------------------
+# OS Files
+# -------------------------
+.DS_Store
+Thumbs.db
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
+# -------------------------
 # Jupyter Notebook
+# -------------------------
 .ipynb_checkpoints/
 
-# pytest
-.pytest_cache/
-.tox/
+# -------------------------
+# Output / Generated Files
+# -------------------------
+output/
+outputs/
+*.jsonl
+*.html
+*.pdf
+agent_trace.jsonl
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-=======
-
-# Ollama models — too large to commit
-*.gguf
+# -------------------------
+# ML Models (Large Files)
+# -------------------------
 *.bin
->>>>>>> origin/Vihanga
+*.gguf
+*.ggml
+*.onnx
+*.pt
+*.pth
+
+# -------------------------
+# CV / Sensitive Files
+# -------------------------
+data/cvs/
+*.pdf
+*.docx
+*.doc
