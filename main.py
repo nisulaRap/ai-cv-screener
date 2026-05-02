@@ -1,10 +1,16 @@
-# main.py
+# main.py - Merged version
 
 import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# ─────────────────────────────────────────────
+# Imports from both implementations
+# ─────────────────────────────────────────────
+from langgraph.graph import StateGraph, END
+from state.shared_state import MASState
+from agents.report_generator import run_report_generator
 from agents.job_matcher_agent import run_job_matcher_agent, build_job_matcher_graph
 from shared_state import PipelineState, JobDescription, CandidateProfile
 from utils.parser_adapter import load_candidates_from_parsed_json
@@ -12,9 +18,7 @@ from utils.parser_adapter import load_candidates_from_parsed_json
 
 # ─────────────────────────────────────────────
 # SAMPLE JOB DESCRIPTION
-# (In the real pipeline, this comes from a JSON file)
 # ─────────────────────────────────────────────
-
 SAMPLE_JOB: JobDescription = {
     "job_id": "job_001",
     "title": "Senior Python Developer",
@@ -37,9 +41,7 @@ SAMPLE_JOB: JobDescription = {
 
 # ─────────────────────────────────────────────
 # SAMPLE CANDIDATES
-# (In the real pipeline, these come from Agent 1)
 # ─────────────────────────────────────────────
-
 SAMPLE_CANDIDATES = [
     CandidateProfile(
         candidate_id="candidate_001",
@@ -90,9 +92,59 @@ SAMPLE_CANDIDATES = [
 
 
 # ─────────────────────────────────────────────
-# BUILD INITIAL PIPELINE STATE
+# Option A: LangGraph Pipeline (from incoming)
 # ─────────────────────────────────────────────
+def build_langgraph_pipeline():
+    """Build the LangGraph pipeline connecting the agents."""
+    graph = StateGraph(MASState)
 
+    graph.add_node("parser_agent", run_document_parser)
+    graph.add_node("report_generator", run_report_generator)
+
+    graph.set_entry_point("parser_agent")
+    graph.add_edge("parser_agent", "report_generator")
+    graph.add_edge("report_generator", END)
+
+    return graph.compile()
+
+
+def run_langgraph_pipeline():
+    """Run the full LangGraph MAS pipeline."""
+    initial_state: MASState = {
+        "job_description_path": "data/job_description.json",
+        "cv_folder_path": "data/cvs",
+        "candidate_profiles": None,
+        "scored_candidates": None,
+        "ranked_candidates": None,
+        "executive_summary": None,
+        "report_path": None,
+        "logs": [],
+        "errors": [],
+    }
+
+    print("🚀 Starting CV Screener MAS (LangGraph Pipeline)...")
+    app = build_langgraph_pipeline()
+    final_state = app.invoke(initial_state)
+
+    print("\n✅ Pipeline Complete!")
+    print(f"📄 Report: {final_state['report_path']}")
+
+    if final_state.get("ranked_candidates"):
+        print(f"👥 Candidates processed: {len(final_state['ranked_candidates'])}")
+
+    print("\n📝 Agent Logs:")
+    for log in final_state["logs"]:
+        print(f"  • {log}")
+
+    if final_state["errors"]:
+        print("\n⚠️  Errors:")
+        for err in final_state["errors"]:
+            print(f"  • {err}")
+
+
+# ─────────────────────────────────────────────
+# Option B: Job Matcher Pipeline (from current)
+# ─────────────────────────────────────────────
 def build_initial_state(use_real_data: bool = False) -> PipelineState:
     """
     Builds the initial pipeline state.
@@ -127,23 +179,12 @@ def build_initial_state(use_real_data: bool = False) -> PipelineState:
     )
 
 
-# ─────────────────────────────────────────────
-# MAIN ENTRY POINT
-# ─────────────────────────────────────────────
-
-def main() -> None:
-    """
-    Main entry point for running the Job Matcher Agent in isolation.
-    Builds a sample pipeline state, runs the agent, and prints results.
-
-    Returns:
-        None
-    """
+def run_job_matcher_pipeline():
+    """Run the Job Matcher Agent pipeline."""
     print("\n🚀 Starting CV Screener Pipeline — Job Matcher Agent")
     print("=" * 60)
 
     # Build initial state
-    #state = build_initial_state()
     state = build_initial_state(use_real_data=False)
 
     print(f"\n📋 Job Title     : {state['job_description']['title']}")
@@ -191,5 +232,28 @@ def main() -> None:
     print("=" * 60)
 
 
+# ─────────────────────────────────────────────
+# MAIN ENTRY POINT - Choose which pipeline to run
+# ─────────────────────────────────────────────
+def main():
+    """Main entry point - select which pipeline to execute."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='CV Screener Pipeline')
+    parser.add_argument('--pipeline', choices=['mas', 'matcher'], 
+                        default='matcher',
+                        help='Choose pipeline to run: mas (LangGraph) or matcher (Job Matcher)')
+    
+    args = parser.parse_args()
+    
+    if args.pipeline == 'mas':
+        # Fix: You need to import or define run_document_parser
+        # from agents.parser_agent import run_document_parser
+        run_langgraph_pipeline()
+    else:
+        run_job_matcher_pipeline()
+
+
 if __name__ == "__main__":
     main()
+    
