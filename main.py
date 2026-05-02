@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from langgraph.graph import StateGraph, END
 from state.shared_state import MASState
 from agents.report_generator import run_report_generator
+from agents.parser_agent import run_document_parser  # ← ADD THIS LINE
 from agents.job_matcher_agent import run_job_matcher_agent, build_job_matcher_graph
 from shared_state import PipelineState, JobDescription, CandidateProfile
 from utils.parser_adapter import load_candidates_from_parsed_json
@@ -256,4 +257,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
