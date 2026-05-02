@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Ollama / ML models (too large for git)
+*.bin
+*.gguf
+*.ggml
+
+# Database (auto-created on each run)
+data/scores.db
+
+# Output (generated files, not source code)
+output/
+agent_trace.jsonl
+
+# CV files (may contain private personal data)
+data/cvs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Environment variables
+.env
