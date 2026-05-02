@@ -9,7 +9,11 @@ class RankedCandidate(TypedDict, total=False):
     score: float
     status: str
     reasoning: str
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> origin/Vihanga
 
 class MASState(TypedDict):
     """
