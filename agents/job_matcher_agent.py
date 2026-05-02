@@ -189,3 +189,70 @@ def run_job_matcher_agent(state: PipelineState) -> PipelineState:
     print(f"\n Job Matcher Agent finished. Scored {len(match_results)}/{len(candidates)} candidates.")
 
     return state
+
+# ─────────────────────────────────────────────
+# LANGGRAPH NODE WRAPPER
+# ─────────────────────────────────────────────
+
+from langgraph.graph import StateGraph, END
+from typing import Literal
+
+
+def job_matcher_node(state: PipelineState) -> PipelineState:
+    """
+    LangGraph node wrapper for the Job Matcher Agent.
+    This function is registered as a node in the LangGraph pipeline.
+
+    Args:
+        state (PipelineState): The current global pipeline state.
+
+    Returns:
+        PipelineState: Updated state after job matching is complete.
+    """
+    return run_job_matcher_agent(state)
+
+
+def should_continue(state: PipelineState) -> Literal["continue", "stop"]:
+    """
+    LangGraph conditional edge function.
+    Determines whether the pipeline should continue to Agent 3
+    or stop due to errors.
+
+    Args:
+        state (PipelineState): The current pipeline state.
+
+    Returns:
+        Literal["continue", "stop"]: Routing decision.
+    """
+    if not state["match_results"]:
+        return "stop"
+    return "continue"
+
+
+def build_job_matcher_graph() -> StateGraph:
+    """
+    Builds and returns the LangGraph StateGraph for the Job Matcher Agent.
+    Can be used standalone for testing or merged into the full pipeline graph.
+
+    Returns:
+        StateGraph: Compiled LangGraph graph with job matcher node.
+    """
+    graph = StateGraph(PipelineState)
+
+    # Add the job matcher as a node
+    graph.add_node("job_matcher", job_matcher_node)
+
+    # Set entry point
+    graph.set_entry_point("job_matcher")
+
+    # Add conditional edge
+    graph.add_conditional_edges(
+        "job_matcher",
+        should_continue,
+        {
+            "continue": END,
+            "stop": END
+        }
+    )
+
+    return graph.compile()

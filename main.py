@@ -136,6 +136,12 @@ def main() -> None:
     # Run your agent
     updated_state = run_job_matcher_agent(state)
 
+    from agents.job_matcher_agent import build_job_matcher_graph
+
+    # Build and run via LangGraph
+    graph = build_job_matcher_graph()
+    updated_state = graph.invoke(build_initial_state())
+
     # ── Print Results ──
     print("\n" + "=" * 60)
     print("📊 MATCH RESULTS SUMMARY")

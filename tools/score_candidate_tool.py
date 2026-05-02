@@ -213,6 +213,19 @@ def score_candidate(
             # Log the result
             log_score_result(candidate_id, candidate_name, result["score"], result["matched_skills"])
 
+
+            # Add confidence flag based on score clarity
+            if parsed["score"] >= 75:
+                result["status"] = "Pending"   # high confidence match
+            elif parsed["score"] >= 40:
+                result["status"] = "Pending"   # borderline
+            else:
+                result["status"] = "Pending"   # clear rejection
+            
+            # Add confidence metadata to reasoning
+            confidence = "HIGH" if len(parsed["matched_skills"]) >= 3 else "LOW"
+            result["reasoning"] = f"[Confidence: {confidence}] {result['reasoning']}"
+
             return result
 
         except Exception as e:
