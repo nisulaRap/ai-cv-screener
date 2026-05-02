@@ -11,7 +11,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from tools.ranker_tool import ranker_tool
 
 AGENT_NAME   = "CandidateRanker"
-OLLAMA_MODEL = "phi3:latest"
+OLLAMA_MODEL = "llama3:8b"
 
 # ---------------------------------------------------------------------------
 # System prompt — persona and constraints for the LLM
@@ -173,7 +173,17 @@ def run_candidate_ranker(state: dict[str, Any]) -> dict[str, Any]:
         message="Candidate Ranker starting — reading scored candidates from state",
     )
 
-    scored_candidates: list[dict[str, Any]] = state.get("scored_candidates", [])
+    # Agent 2 stores results as "match_results" — fall back to "scored_candidates"
+    scored_candidates: list[dict[str, Any]] = (
+        state.get("match_results") or state.get("scored_candidates", [])
+    )
+
+    # Normalise missing fields — email may not exist in Agent 2's output
+    for candidate in scored_candidates:
+        candidate.setdefault("email", "")
+        candidate.setdefault("reasoning", "No reasoning provided.")
+        candidate.setdefault("matched_skills", [])
+        candidate.setdefault("missing_skills", [])
 
     # Guard: nothing to rank
     if not scored_candidates:
