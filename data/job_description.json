@@ -1,19 +1,18 @@
 {
-    "job_id": "job_001",
-    "title": "Senior Python Developer",
+    "job_id": "job_002",
+    "title": "Intern Software Developer",
     "required_skills": [
         "Python",
-        "REST APIs",
-        "SQL",
-        "Git"
+        "Java",
+        "C#",
+        "C++",
+        "MERN Stack"
     ],
     "preferred_skills": [
-        "FastAPI",
         "Docker",
-        "PostgreSQL",
-        "Redis"
+        "AWS"
     ],
-    "min_experience_years": 3.0,
-    "education_requirement": "Bachelor's degree in Computer Science or related field",
-    "description": "We are looking for a Senior Python Developer to join our backend team. You will design and build scalable REST APIs, work with SQL databases, and collaborate with frontend teams. Experience with FastAPI and Docker is a strong advantage. You must be comfortable working in an agile environment."
+    "min_experience_years": 1.0,
+    "education_requirement": " Bachelor's degree in Computer Science or related field",
+    "description": "We are looking for a Intern Software Developer to join our backend team. You will design and build scalable MERN Stack, work with SQL databases, and collaborate with frontend teams. Experience with AWS and Docker is a strong advantage. You must be comfortable working in an agile environment."
 }

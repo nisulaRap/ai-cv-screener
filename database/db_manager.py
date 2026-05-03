@@ -1,5 +1,3 @@
-# database/db_manager.py
-
 import sqlite3
 import json
 import os
@@ -92,8 +90,8 @@ def save_match_result(result: MatchResult, job_id: str) -> None:
         result["name"],
         result["score"],
         result["reasoning"],
-        json.dumps(result["matched_skills"]),   # store list as JSON string
-        json.dumps(result["missing_skills"]),   # store list as JSON string
+        json.dumps(result["matched_skills"]),   
+        json.dumps(result["missing_skills"]),   
         result.get("status", "Pending"),
         job_id,
         datetime.now().isoformat()

@@ -19,9 +19,9 @@ from state.shared_state import MASState
 AGENT_NAME   = "CandidateRanker"
 OLLAMA_MODEL = "llama3:8b"
 
-# ---------------------------------------------------------------------------
+
 # System prompt — persona and constraints for the LLM
-# ---------------------------------------------------------------------------
+
 SYSTEM_PROMPT = """You are a senior HR analyst and talent acquisition specialist.
 Your role is to provide clear, professional, and objective reasoning for candidate
 ranking decisions based on their match scores against job requirements.
@@ -202,9 +202,9 @@ def run_candidate_ranker(state: MASState) -> MASState:
         log_event(AGENT_NAME, "error", message=error_msg)
         return state
 
-    # ------------------------------------------------------------------
+    
     # Step 1 — Deterministic ranking via ranker_tool
-    # ------------------------------------------------------------------
+
     log_event(
         AGENT_NAME, "tool_call",
         tool_name="ranker_tool",
@@ -231,9 +231,9 @@ def run_candidate_ranker(state: MASState) -> MASState:
         log_event(AGENT_NAME, "error", message=error_msg)
         return state
 
-    # ------------------------------------------------------------------
+    
     # Step 2 — LLM reasoning via Ollama
-    # ------------------------------------------------------------------
+
     log_event(
         AGENT_NAME, "llm_start",
         message=f"Initialising Ollama LLM ({OLLAMA_MODEL}) for reasoning generation",
@@ -300,9 +300,8 @@ def run_candidate_ranker(state: MASState) -> MASState:
             f"of {len(ranked_candidates)} candidates were shortlisted."
         )
 
-    # ------------------------------------------------------------------
     # Step 3 — Write results back to shared state
-    # ------------------------------------------------------------------
+
     state["ranked_candidates"] = ranked_candidates
 
     shortlisted_count = sum(1 for c in ranked_candidates if c["status"] == "Shortlisted")

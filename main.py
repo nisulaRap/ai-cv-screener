@@ -11,7 +11,6 @@ import sys
 import os
 import json
 
-# Ensure the project root is on sys.path so all package imports resolve
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from langgraph.graph import StateGraph, END
@@ -22,11 +21,7 @@ from agents.job_matcher_agent import run_job_matcher_agent
 from agents.ranker_agent      import run_candidate_ranker
 from agents.report_generator  import run_report_generator
 
-
-# ─────────────────────────────────────────────
 # Build the 4-node LangGraph pipeline
-# ─────────────────────────────────────────────
-
 def build_pipeline() -> StateGraph:
     """
     Assembles and compiles the full MAS pipeline as a LangGraph StateGraph.
@@ -50,18 +45,15 @@ def build_pipeline() -> StateGraph:
 
     # Wire them sequentially
     graph.set_entry_point("parser_agent")
-    graph.add_edge("parser_agent",     "job_matcher")
-    graph.add_edge("job_matcher",      "candidate_ranker")
+    graph.add_edge("parser_agent", "job_matcher")
+    graph.add_edge("job_matcher", "candidate_ranker")
     graph.add_edge("candidate_ranker", "report_generator")
     graph.add_edge("report_generator", END)
 
     return graph.compile()
 
 
-# ─────────────────────────────────────────────
 # Load job description from JSON
-# ─────────────────────────────────────────────
-
 def load_job_description(path: str) -> dict:
     """
     Loads the job description from a JSON file.
@@ -77,22 +69,19 @@ def load_job_description(path: str) -> dict:
     """
     abs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
     if not os.path.exists(abs_path):
-        print(f"❌  Job description file not found: {abs_path}")
-        print("    Create data/job_description.json before running the pipeline.")
+        print(f" Job description file not found: {abs_path}")
+        print(" Create data/job_description.json before running the pipeline.")
         sys.exit(1)
 
     with open(abs_path, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:
-            print(f"❌  Malformed JSON in {abs_path}: {e}")
+            print(f" Malformed JSON in {abs_path}: {e}")
             sys.exit(1)
 
 
-# ─────────────────────────────────────────────
 # Run the pipeline
-# ─────────────────────────────────────────────
-
 def run_pipeline(
     job_description_path: str = "data/job_description.json",
     cv_folder_path: str = "data/cvs",
@@ -114,16 +103,14 @@ def run_pipeline(
         The final MASState after all agents have run.
     """
     print("\n" + "=" * 60)
-    print("🚀  AI CV Screener — Multi-Agent System")
+    print("AI CV Screener — Multi-Agent System")
     print("=" * 60)
 
-    # Load the job description once at startup
     job_description = load_job_description(job_description_path)
-    print(f"\n📋  Job Title   : {job_description.get('title', 'N/A')}")
-    print(f"📁  CV Folder   : {cv_folder_path}")
-    print(f"🔧  Job ID      : {job_description.get('job_id', 'N/A')}")
+    print(f"\n Job Title   : {job_description.get('title', 'N/A')}")
+    print(f" CV Folder   : {cv_folder_path}")
+    print(f" Job ID      : {job_description.get('job_id', 'N/A')}")
 
-    # Build initial state
     initial_state: MASState = {
         "job_description_path": job_description_path,
         "cv_folder_path":       cv_folder_path,
@@ -137,15 +124,15 @@ def run_pipeline(
         "errors":               [],
     }
 
-    print("\n⚙️   Building pipeline...")
+    print("\n Building pipeline...")
     app = build_pipeline()
 
-    print("▶️   Running agents...\n")
+    print(" Running agents...\n")
     final_state: MASState = app.invoke(initial_state)
 
-    # ── Summary ──────────────────────────────
+    # Summary
     print("\n" + "=" * 60)
-    print("✅  Pipeline Complete!")
+    print(" Pipeline Complete!")
     print("=" * 60)
 
     n_parsed  = len(final_state.get("candidate_profiles", []))
@@ -157,40 +144,35 @@ def run_pipeline(
     )
     report    = final_state.get("report_path")
 
-    print(f"\n  📄  CVs parsed        : {n_parsed}")
-    print(f"  🎯  Candidates scored : {n_scored}")
-    print(f"  🏆  Candidates ranked : {n_ranked}")
-    print(f"  ✅  Shortlisted       : {n_short}")
-    print(f"  ❌  Rejected          : {n_ranked - n_short}")
+    print(f"\n CVs parsed        : {n_parsed}")
+    print(f" Candidates scored : {n_scored}")
+    print(f" Candidates ranked : {n_ranked}")
+    print(f" Shortlisted       : {n_short}")
+    print(f" Rejected          : {n_ranked - n_short}")
 
     if report:
         abs_report = os.path.abspath(
             os.path.join(os.path.dirname(os.path.abspath(__file__)), report)
         )
-        print(f"\n  📊  Report saved to   : {abs_report}")
+        print(f"\n Report saved to   : {abs_report}")
     else:
-        print("\n  ⚠️   Report was NOT generated — check errors below.")
+        print("\n Report was NOT generated — check errors below.")
 
     if final_state.get("executive_summary"):
-        print(f"\n  📝  Executive Summary:\n  {final_state['executive_summary']}")
+        print(f"\n Executive Summary:\n  {final_state['executive_summary']}")
 
     if final_state.get("logs"):
-        print("\n  📋  Agent Logs:")
+        print("\n Agent Logs:")
         for log in final_state["logs"]:
             print(f"        • {log}")
 
     if final_state.get("errors"):
-        print("\n  ⚠️   Errors encountered:")
+        print("\n Errors encountered:")
         for err in final_state["errors"]:
             print(f"        • {err}")
 
     print("\n" + "=" * 60 + "\n")
     return final_state
-
-
-# ─────────────────────────────────────────────
-# Entry point
-# ─────────────────────────────────────────────
 
 def main():
     import argparse

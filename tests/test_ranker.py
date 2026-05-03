@@ -14,9 +14,7 @@ from tools.ranker_tool import ranker_tool
 from agents.ranker_agent import run_candidate_ranker
 
 
-# ---------------------------------------------------------------------------
 # Shared fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def sample_candidates() -> list[dict]:
@@ -45,9 +43,7 @@ def base_state(sample_candidates) -> dict:
     }
 
 
-# ===========================================================================
 # UNIT TESTS — ranker_tool
-# ===========================================================================
 
 class TestRankerToolHappyPath:
 
@@ -212,9 +208,7 @@ class TestRankerToolErrorHandling:
             ranker_tool(candidates)
 
 
-# ===========================================================================
 # INTEGRATION TESTS — run_candidate_ranker agent node
-# ===========================================================================
 
 class TestRankerAgentNode:
 

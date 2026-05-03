@@ -3,9 +3,8 @@
  * Main JavaScript file for handling UI interactions and API calls
  */
 
-// ═══════════════════════════════════════════
+
 // State Management
-// ═══════════════════════════════════════════
 
 const AppState = {
     currentRunId: null,
@@ -15,9 +14,8 @@ const AppState = {
     runs: [],
 };
 
-// ═══════════════════════════════════════════
+
 // API Service
-// ═══════════════════════════════════════════
 
 const API = {
     baseURL: '/api',
@@ -113,9 +111,8 @@ const API = {
     },
 };
 
-// ═══════════════════════════════════════════
+
 // UI Helpers
-// ═══════════════════════════════════════════
 
 function showToast(type, message) {
     const container = document.getElementById('toastContainer');
@@ -215,9 +212,8 @@ function animateCounter(elementId, targetValue) {
     requestAnimationFrame(animate);
 }
 
-// ═══════════════════════════════════════════
+
 // Dashboard Functions
-// ═══════════════════════════════════════════
 
 async function updateDashboard() {
     try {
@@ -229,13 +225,13 @@ async function updateDashboard() {
         const completedRuns = AppState.runs.filter(run => run.status === 'completed');
         
         if (completedRuns.length > 0) {
-            const latestRun = completedRuns[0]; // Most recent first
+            const latestRun = completedRuns[0]; 
             
             // If we don't have results loaded, or the run ID changed, fetch them
             if (!AppState.lastResults || AppState.lastResults.run_id !== latestRun.run_id) {
                 try {
                     const results = await API.getCandidates(latestRun.run_id);
-                    results.run_id = latestRun.run_id; // Store run_id for comparison
+                    results.run_id = latestRun.run_id; 
                     AppState.lastResults = results;
                 } catch (error) {
                     console.error('Failed to load latest results:', error);
@@ -356,9 +352,8 @@ async function loadJobInfo() {
     }
 }
 
-// ═══════════════════════════════════════════
+
 // File Upload Functions
-// ═══════════════════════════════════════════
 
 function initDropZone() {
     const dropZone = document.getElementById('dropZone');
@@ -370,7 +365,7 @@ function initDropZone() {
     // File input change
     fileInput.addEventListener('change', (e) => {
         handleFiles(e.target.files);
-        fileInput.value = ''; // Reset
+        fileInput.value = ''; 
     });
 
     // Drag and drop
@@ -471,9 +466,8 @@ async function clearUploads() {
     }
 }
 
-// ═══════════════════════════════════════════
+
 // Job Description Functions
-// ═══════════════════════════════════════════
 
 function loadDefaultJob() {
     const defaultJob = {
@@ -520,16 +514,16 @@ async function saveJobDescription(e) {
         const result = await API.saveJobDescription(jobData);
         showToast('success', 'Job description saved successfully');
         
-        // Update job info on dashboard
-        loadJobInfo();
+        // Update job info on dashboard and navigate to dashboard to see the update
+        await loadJobInfo();
+        navigateToPage('dashboard');
     } catch (error) {
         showToast('error', 'Failed to save job description');
     }
 }
 
-// ═══════════════════════════════════════════
+
 // Pipeline Functions
-// ═══════════════════════════════════════════
 
 async function runPipeline() {
     if (AppState.pipelineRunning) {
@@ -689,14 +683,13 @@ function updatePipelineProgress(status) {
     document.getElementById('progressBar').style.width = `${progressPercent}%`;
 }
 
-// ═══════════════════════════════════════════
+
 // Results Functions
-// ═══════════════════════════════════════════
 
 async function viewRunResults(runId) {
     try {
         const results = await API.getCandidates(runId);
-        results.run_id = runId; // Store run_id for comparison
+        results.run_id = runId; 
         AppState.lastResults = results;
         AppState.currentRunId = runId;
         
@@ -806,9 +799,8 @@ function downloadReport() {
     link.click();
 }
 
-// ═══════════════════════════════════════════
+
 // History Functions
-// ═══════════════════════════════════════════
 
 async function loadHistory() {
     try {
@@ -847,9 +839,8 @@ async function loadHistory() {
     }
 }
 
-// ═══════════════════════════════════════════
+
 // Initialization
-// ═══════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize navigation

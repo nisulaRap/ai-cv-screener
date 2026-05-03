@@ -14,14 +14,14 @@ def make_state(candidates: list = None) -> MASState:
             {
                 "rank": 1, "name": "Alice Perera",
                 "email": "alice@test.com",
-                "score": 80.0,              # ← now float like Agent 3 sends
+                "score": 80.0,
                 "status": "Shortlisted",
                 "reasoning": "Strong Python and SQL skills.",
             },
             {
                 "rank": 2, "name": "Bob Fernando",
                 "email": "bob@test.com",
-                "score": 45.0,              # ← float
+                "score": 45.0,
                 "status": "Rejected",
                 "reasoning": "Missing key required skills.",
             },

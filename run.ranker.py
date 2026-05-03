@@ -6,22 +6,17 @@ using the same data format that Agent 2 (Job Matcher) produces.
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage
 
-# ------------------------------------------------------------------
-# Step 1 — Test Ollama connection
-# ------------------------------------------------------------------
+
 print("Step 1: Testing Ollama connection with llama3:8b...")
 try:
     llm = ChatOllama(model="llama3:8b", temperature=0.4)
     response = llm.invoke([HumanMessage(content="Reply with exactly: LLM IS WORKING")])
-    print(f"✅ LLM response: {response.content}\n")
+    print(f" LLM response: {response.content}\n")
 except Exception as e:
-    print(f"❌ LLM connection failed: {e}")
+    print(f" LLM connection failed: {e}")
     print("Make sure 'ollama serve' is running in a separate terminal")
     exit(1)
 
-# ------------------------------------------------------------------
-# Step 2 — Run Candidate Ranker with real Agent 2 data format
-# ------------------------------------------------------------------
 print("Step 2: Running Candidate Ranker with Agent 2 real data format...\n")
 
 from agents.ranker_agent import run_candidate_ranker
@@ -68,7 +63,7 @@ state = {
             "missing_skills": ["Python", "REST APIs", "SQL", "Git"],
         },
     ],
-    "scored_candidates": [],   # Agent 2 uses match_results instead
+    "scored_candidates": [],
     "ranked_candidates": [],
     "report_path": None,
     "logs": [],
@@ -77,9 +72,7 @@ state = {
 
 result = run_candidate_ranker(state)
 
-# ------------------------------------------------------------------
 # Step 3 — Print results
-# ------------------------------------------------------------------
 print("\n========== RANKED CANDIDATES ==========")
 for c in result["ranked_candidates"]:
     print(f"\n#{c['rank']} {c['name']} — Score: {c['score']} — {c['status']}")
@@ -95,6 +88,6 @@ for log in result["logs"]:
 print("\n========== ERRORS ==========")
 if result["errors"]:
     for e in result["errors"]:
-        print(f"  ❌ {e}")
+        print(f"[ERROR] {e}")
 else:
-    print("  None ✅")
+    print("[OK] No errors")

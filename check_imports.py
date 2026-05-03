@@ -3,21 +3,21 @@ sys.path.insert(0, os.getcwd())
 
 errors = []
 
-# 1. Unified state
+# Unified state
 try:
     from state.shared_state import MASState, CandidateProfile, MatchResult, RankedCandidate, JobDescription
     print('[OK] state.shared_state')
 except Exception as e:
     errors.append(f'[FAIL] state.shared_state: {e}')
 
-# 2. Observability
+# Observability
 try:
     from observability.logger import log_event
     print('[OK] observability.logger')
 except Exception as e:
     errors.append(f'[FAIL] observability.logger: {e}')
 
-# 3. Tools
+# Tools
 try:
     from tools.grammar_check_tool import grammar_check
     print('[OK] tools.grammar_check_tool')
@@ -36,28 +36,28 @@ try:
 except Exception as e:
     errors.append(f'[FAIL] tools.ranker_tool: {e}')
 
-# 4. Database
+# Database
 try:
     from database.db_manager import initialize_database, save_match_result, get_all_match_results, clear_results_for_job
     print('[OK] database.db_manager')
 except Exception as e:
     errors.append(f'[FAIL] database.db_manager: {e}')
 
-# 5. Logs
+# Logs
 try:
     from logs.agent_log import log_agent_start, log_agent_complete, log_tool_error, log_state_update
     print('[OK] logs.agent_log')
 except Exception as e:
     errors.append(f'[FAIL] logs.agent_log: {e}')
 
-# 6. Utils
+# Utils
 try:
     from utils.parser_adapter import load_candidates_from_parsed_json
     print('[OK] utils.parser_adapter')
 except Exception as e:
     errors.append(f'[FAIL] utils.parser_adapter: {e}')
 
-# 7. Agents
+# Agents
 try:
     from agents.parser_agent import run_document_parser, run_parser_agent
     print('[OK] agents.parser_agent')
@@ -82,7 +82,7 @@ try:
 except Exception as e:
     errors.append(f'[FAIL] agents.report_generator: {e}')
 
-# 8. Main
+# Main
 try:
     import importlib.util
     spec = importlib.util.spec_from_file_location('main', 'main.py')

@@ -79,7 +79,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div class="container">
-  <h1>📋 CV Screening Report</h1>
+  <h1> CV Screening Report</h1>
   <div class="meta">
     <strong>Job Title:</strong> {{ job_title }} &nbsp;|&nbsp;
     <strong>Generated:</strong> {{ generated_at }} &nbsp;|&nbsp;
@@ -141,16 +141,15 @@ def run_report_generator(state: MASState) -> MASState:
 
     ranked = state["ranked_candidates"]
 
-    # ── FIX: safely read executive_summary (may be None) ──────────────────
     executive_summary: str = state.get("executive_summary") or ""
 
-    # ── FIX: convert score to int so 80.0 displays as 80 ──────────────────
+
     for candidate in ranked:
         candidate["score"] = int(candidate["score"])
 
     shortlisted = sum(1 for c in ranked if c["status"] == "Shortlisted")
 
-    # --- Collect reasoning text for grammar check ---
+    # Collect reasoning text for grammar check
     all_reasoning = " ".join(
         c["reasoning"] for c in ranked if c.get("reasoning", "").strip()
     )
@@ -196,7 +195,7 @@ def run_report_generator(state: MASState) -> MASState:
             candidate["name"], candidate.get("reasoning", "")
         )
 
-    # --- Render HTML ---
+    # Render HTML
     template = Template(HTML_TEMPLATE)
     html = template.render(
         job_title="Software Engineer",
@@ -209,7 +208,7 @@ def run_report_generator(state: MASState) -> MASState:
         candidates=ranked,
     )
 
-    # --- Write report ---
+    # Write report
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
     Path(OUTPUT_PATH).write_text(html, encoding="utf-8")
 

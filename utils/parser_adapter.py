@@ -1,5 +1,3 @@
-# utils/parser_adapter.py
-
 import json
 import os
 import re

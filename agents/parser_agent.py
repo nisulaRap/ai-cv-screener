@@ -1,4 +1,3 @@
-# agents/parser_agent.py
 # Agent 1 — Document Parser
 # Reads every CV file from the folder, extracts structured data,
 # and writes candidate_profiles into MASState.
@@ -17,9 +16,7 @@ from tools.parser_tool import read_all_cvs
 from state.shared_state import MASState, CandidateProfile
 
 
-# ─────────────────────────────────────────────
 # Text extraction helpers
-# ─────────────────────────────────────────────
 
 def extract_email(text: str) -> str:
     match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
@@ -133,9 +130,8 @@ def extract_location(text: str) -> str:
     return ""
 
 
-# ─────────────────────────────────────────────
+
 # Optional Ollama enrichment (falls back gracefully)
-# ─────────────────────────────────────────────
 
 def parse_with_ollama(text: str, model: str = "llama3:8b") -> Dict[str, Any]:
     import requests
@@ -189,9 +185,7 @@ CV Text:
         return {"error": "Ollama did not return valid JSON", "raw_output": result}
 
 
-# ─────────────────────────────────────────────
 # Parse a single CV file dict into a CandidateProfile
-# ─────────────────────────────────────────────
 
 def parse_single_cv(cv: Dict[str, Any], index: int) -> CandidateProfile:
     """
@@ -243,9 +237,7 @@ def parse_single_cv(cv: Dict[str, Any], index: int) -> CandidateProfile:
         return rule_based
 
 
-# ─────────────────────────────────────────────
 # Standalone runner (used by the LangGraph node below)
-# ─────────────────────────────────────────────
 
 def run_parser_agent(
     cv_folder: str = "data/cvs",
@@ -271,9 +263,7 @@ def run_parser_agent(
     return profiles
 
 
-# ─────────────────────────────────────────────
 # LangGraph node entry point
-# ─────────────────────────────────────────────
 
 def run_document_parser(state: MASState) -> MASState:
     """
@@ -289,7 +279,7 @@ def run_document_parser(state: MASState) -> MASState:
         MASState: Updated state with candidate_profiles populated.
     """
     print("\n" + "=" * 60)
-    print("📄 Agent 1 — Document Parser starting...")
+    print(" Agent 1 — Document Parser starting...")
     print("=" * 60)
 
     cv_folder = state.get("cv_folder_path", "data/cvs")
@@ -303,20 +293,19 @@ def run_document_parser(state: MASState) -> MASState:
         state.setdefault("logs", []).append(
             f"DocumentParser: Parsed {len(profiles)} CV(s) from '{cv_folder}'"
         )
-        print(f"\n✅ Agent 1 complete — {len(profiles)} candidate(s) parsed.")
+        print(f"\n Agent 1 complete — {len(profiles)} candidate(s) parsed.")
 
     except (FileNotFoundError, ValueError) as e:
         error_msg = f"DocumentParser failed: {e}"
         state.setdefault("errors", []).append(error_msg)
         state["candidate_profiles"] = []
-        print(f"\n❌ {error_msg}")
+        print(f"\n {error_msg}")
 
     return state
 
 
-# ─────────────────────────────────────────────
 # Standalone test
-# ─────────────────────────────────────────────
+
 if __name__ == "__main__":
     results = run_parser_agent()
     print(json.dumps(results, indent=4))

@@ -108,7 +108,7 @@ class TestParserAgent(unittest.TestCase):
         result = parse_single_cv(sample_cv, 0)
 
         self.assertIsInstance(result, dict)
-        self.assertIn("file_name", sample_cv)  # file_name is in input, not output
+        self.assertIn("file_name", sample_cv)
         self.assertIn("candidate_id", result)
 
 

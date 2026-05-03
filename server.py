@@ -17,23 +17,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Ensure the project root is on sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from main import run_pipeline, build_pipeline
 from state.shared_state import MASState
 
-# ─────────────────────────────────────────────
 # FastAPI App Setup
-# ─────────────────────────────────────────────
-
 app = FastAPI(
     title="AI CV Screener API",
     description="REST API for the AI CV Screener Multi-Agent System",
     version="1.0.0"
 )
 
-# Enable CORS for frontend
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,32 +38,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─────────────────────────────────────────────
-# Directories
-# ─────────────────────────────────────────────
 
+# Directories
 UPLOAD_DIR = Path("data/uploads")
 CV_DIR = Path("data/cvs")
 OUTPUT_DIR = Path("outputs")
 
-# Create directories if they don't exist
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 CV_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Mount static files
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
-# ─────────────────────────────────────────────
-# In-memory state for pipeline runs
-# ─────────────────────────────────────────────
-
 pipeline_runs: dict[str, dict] = {}
-
-# ─────────────────────────────────────────────
-# Request/Response Models
-# ─────────────────────────────────────────────
 
 class JobDescriptionInput(BaseModel):
     job_id: Optional[str] = None
@@ -78,7 +62,6 @@ class JobDescriptionInput(BaseModel):
     education_requirement: str
     description: str
 
-
 class PipelineRequest(BaseModel):
     job_description: JobDescriptionInput
 
@@ -88,18 +71,12 @@ class PipelineResponse(BaseModel):
     status: str
     message: str
 
-
 class RunStatusResponse(BaseModel):
     run_id: str
     status: str
     progress: str
     result: Optional[dict] = None
     error: Optional[str] = None
-
-
-# ─────────────────────────────────────────────
-# Helper Functions
-# ─────────────────────────────────────────────
 
 def generate_job_id() -> str:
     """Generate a unique job ID."""
@@ -129,7 +106,6 @@ def run_pipeline_async(run_id: str, job_path: str, cv_path: str):
         # Build and run pipeline
         app_pipeline = build_pipeline()
         
-        # Load job description
         with open(job_path, "r", encoding="utf-8") as f:
             job_description = json.load(f)
         
@@ -146,10 +122,8 @@ def run_pipeline_async(run_id: str, job_path: str, cv_path: str):
             "errors": [],
         }
         
-        # Run pipeline with progress updates
         pipeline_runs[run_id]["progress"] = "Agent 1: Parsing CVs..."
         
-        # Custom streaming by running agents one by one
         state = initial_state
         
         # Agent 1: Parser
@@ -195,10 +169,7 @@ def run_pipeline_async(run_id: str, job_path: str, cv_path: str):
         pipeline_runs[run_id]["progress"] = f"Error: {str(e)}"
 
 
-# ─────────────────────────────────────────────
 # API Routes
-# ─────────────────────────────────────────────
-
 @app.get("/")
 async def root():
     """Redirect to the frontend."""
@@ -226,15 +197,12 @@ async def upload_cv(file: UploadFile = File(...)):
             detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
         )
     
-    # Generate unique filename
     unique_filename = f"{uuid.uuid4().hex}{file_ext}"
     file_path = UPLOAD_DIR / unique_filename
     
-    # Save file
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    # Also copy to CV directory for pipeline processing
     cv_file_path = CV_DIR / unique_filename
     with open(file_path, "rb") as src:
         with open(cv_file_path, "wb") as dst:
@@ -289,8 +257,15 @@ async def upload_cvs_batch(files: list[UploadFile] = File(...)):
 async def create_job_description(job: JobDescriptionInput):
     """
     Create and save a job description.
+    Also saves a copy to data/job_description.json for the dashboard.
     """
     job_path = save_job_description(job)
+    
+    default_path = Path("data/job_description.json")
+    default_path.parent.mkdir(parents=True, exist_ok=True)
+    job_dict = job.model_dump()
+    with open(default_path, "w", encoding="utf-8") as f:
+        json.dump(job_dict, f, indent=4)
     
     return {
         "job_id": job.job_id,
@@ -306,18 +281,16 @@ async def get_job_description(job_id: str):
     Retrieve a job description by ID.
     If job_id is 'default', loads from data/job_description.json.
     """
-    # Check for default job description
+
     if job_id == "default":
         default_path = Path("data/job_description.json")
         if default_path.exists():
             with open(default_path, "r", encoding="utf-8") as f:
                 return json.load(f)
     
-    # Check in uploads directory
     job_path = UPLOAD_DIR / f"job_{job_id}.json"
     
     if not job_path.exists():
-        # If not found, try loading default as fallback
         default_path = Path("data/job_description.json")
         if default_path.exists():
             with open(default_path, "r", encoding="utf-8") as f:
@@ -345,31 +318,26 @@ async def run_pipeline_endpoint(
     """
     run_id = f"run_{uuid.uuid4().hex[:8]}"
     
-    # Determine job description path
     if job_id:
         job_path = UPLOAD_DIR / f"job_{job_id}.json"
         if not job_path.exists():
             raise HTTPException(status_code=404, detail=f"Job description '{job_id}' not found")
     else:
-        # Use default job description
         job_path = Path("data/job_description.json")
         if not job_path.exists():
             raise HTTPException(status_code=404, detail="Default job description not found")
     
-    # Clear CV directory if requested
     if clear_cvs and CV_DIR.exists():
         for f in CV_DIR.iterdir():
             if f.is_file():
                 f.unlink()
         
-        # Copy uploaded files to CV directory
         if UPLOAD_DIR.exists():
             for f in UPLOAD_DIR.iterdir():
                 if f.is_file() and f.suffix.lower() in {".pdf", ".docx", ".txt"}:
                     if not f.name.startswith("job_"):  # Skip job description files
                         shutil.copy2(f, CV_DIR / f.name)
     
-    # Initialize run state
     pipeline_runs[run_id] = {
         "status": "queued",
         "progress": "Preparing pipeline...",
@@ -384,7 +352,6 @@ async def run_pipeline_endpoint(
         "error": None,
     }
     
-    # Run pipeline in background
     background_tasks.add_task(
         run_pipeline_async,
         run_id,
@@ -490,14 +457,12 @@ async def clear_uploads():
     """
     cleared = 0
     
-    # Clear uploads directory (except job descriptions)
     if UPLOAD_DIR.exists():
         for f in UPLOAD_DIR.iterdir():
             if f.is_file() and not f.name.startswith("job_"):
                 f.unlink()
                 cleared += 1
     
-    # Clear CV directory
     if CV_DIR.exists():
         for f in CV_DIR.iterdir():
             if f.is_file():
@@ -507,10 +472,8 @@ async def clear_uploads():
     return {"message": f"Cleared {cleared} files"}
 
 
-# ─────────────────────────────────────────────
-# Frontend Routes
-# ─────────────────────────────────────────────
 
+# Frontend Routes
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
     """Serve the main dashboard."""
@@ -525,10 +488,7 @@ async def report_viewer():
         return f.read()
 
 
-# ─────────────────────────────────────────────
 # Main Entry Point
-# ─────────────────────────────────────────────
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)

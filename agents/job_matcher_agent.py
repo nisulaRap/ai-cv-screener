@@ -1,4 +1,3 @@
-# agents/job_matcher_agent.py
 # Agent 2 — Job Matcher
 # Reads candidate_profiles from MASState, scores each one, writes match_results back.
 
@@ -19,9 +18,8 @@ from logs.agent_log import (
 from state.shared_state import MASState, MatchResult
 
 
-# ─────────────────────────────────────────────
+
 # AGENT PERSONA & SYSTEM PROMPT
-# ─────────────────────────────────────────────
 
 AGENT_PERSONA = """
 You are the Job Matcher Agent, a highly specialized HR evaluation engine.
@@ -45,9 +43,8 @@ You work as part of a multi-agent pipeline:
 """
 
 
-# ─────────────────────────────────────────────
+
 # AGENT CONSTRAINTS
-# ─────────────────────────────────────────────
 
 AGENT_CONSTRAINTS = {
     "min_score": 0.0,
@@ -179,8 +176,8 @@ def run_job_matcher_agent(state: MASState) -> MASState:
     log_agent_complete(job["job_id"], len(match_results))
 
     if skipped:
-        print(f"\n⚠️  Skipped {len(skipped)} candidate(s): {skipped}")
+        print(f"\n  Skipped {len(skipped)} candidate(s): {skipped}")
 
-    print(f"\n✅ Job Matcher Agent finished. Scored {len(match_results)}/{len(candidates)} candidates.")
+    print(f"\n Job Matcher Agent finished. Scored {len(match_results)}/{len(candidates)} candidates.")
 
     return state

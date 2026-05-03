@@ -1,21 +1,19 @@
 from typing import TypedDict, List, Optional, Any
 
-# ─────────────────────────────────────────────
 # Data-contract TypedDicts (shared by all agents)
-# ─────────────────────────────────────────────
 
 class CandidateProfile(TypedDict, total=False):
     """
     Output from Agent 1 (Document Parser).
     Represents a single parsed candidate CV.
     """
-    candidate_id: str        # unique ID e.g. "candidate_001"
-    name: str                # full name
-    email: str               # email address
-    skills: List[str]        # e.g. ["Python", "SQL", "Machine Learning"]
-    experience_years: float  # total years of experience
-    education: str           # highest qualification
-    raw_text: str            # full CV text (fallback for LLM)
+    candidate_id: str        
+    name: str                
+    email: str               
+    skills: List[str]       
+    experience_years: float  
+    education: str           
+    raw_text: str            
 
 
 class MatchResult(TypedDict, total=False):
@@ -23,14 +21,14 @@ class MatchResult(TypedDict, total=False):
     Output from Agent 2 (Job Matcher).
     Represents the scoring result for one candidate.
     """
-    candidate_id: str         # same ID from CandidateProfile
-    name: str                 # candidate name
-    email: str                # candidate email (carried forward)
-    score: float              # match score 0–100
-    reasoning: str            # why this score was given
-    matched_skills: List[str] # skills that matched the job
-    missing_skills: List[str] # skills the job needs but candidate lacks
-    status: str               # "Pending" → set to "Shortlisted"/"Rejected" by Agent 3
+    candidate_id: str         
+    name: str                 
+    email: str                
+    score: float              
+    reasoning: str            
+    matched_skills: List[str] 
+    missing_skills: List[str] 
+    status: str               
 
 
 class RankedCandidate(TypedDict, total=False):
@@ -51,18 +49,16 @@ class JobDescription(TypedDict, total=False):
     The job posting HR provides as input.
     Loaded from data/job_description.json at pipeline start.
     """
-    job_id: str               # unique job ID
-    title: str                # e.g. "Senior Python Developer"
-    required_skills: List[str]       # must-have skills
-    preferred_skills: List[str]      # nice-to-have skills
-    min_experience_years: float      # minimum years required
-    education_requirement: str       # e.g. "Bachelor's in Computer Science"
-    description: str                 # full job description text
+    job_id: str             
+    title: str               
+    required_skills: List[str]      
+    preferred_skills: List[str]      
+    min_experience_years: float     
+    education_requirement: str       
+    description: str                 
 
 
-# ─────────────────────────────────────────────
 # Unified Pipeline State (passed between ALL agents)
-# ─────────────────────────────────────────────
 
 class MASState(TypedDict, total=False):
     """

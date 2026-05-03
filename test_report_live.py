@@ -39,7 +39,7 @@ fake_state = {
 
 result = run_report_generator(fake_state)
 
-print(f"\n✅ Report generated: {result['report_path']}")
-print(f"📝 Logs: {result['logs']}")
+print(f"\n Report generated: {result['report_path']}")
+print(f" Logs: {result['logs']}")
 if result['errors']:
-    print(f"⚠️  Errors: {result['errors']}")
+    print(f" Errors: {result['errors']}")
