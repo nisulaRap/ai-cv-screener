@@ -1,0 +1,19 @@
+{
+    "job_id": "job_001",
+    "title": "Senior Python Developer",
+    "required_skills": [
+        "Python",
+        "REST APIs",
+        "SQL",
+        "Git"
+    ],
+    "preferred_skills": [
+        "FastAPI",
+        "Docker",
+        "PostgreSQL",
+        "Redis"
+    ],
+    "min_experience_years": 3.0,
+    "education_requirement": "Bachelor's degree in Computer Science or related field",
+    "description": "We are looking for a Senior Python Developer to join our backend team. You will design and build scalable REST APIs, work with SQL databases, and collaborate with frontend teams. Experience with FastAPI and Docker is a strong advantage. You must be comfortable working in an agile environment."
+}
