@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI CV Screener - Dashboard</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-text">CV Screener</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="upload">
+                    <span>Upload CVs</span>
+                </a>
+                <a href="#" class="nav-item" data-page="job-description">
+                    <span>Job Description</span>
+                </a>
+                <a href="#" class="nav-item" data-page="results">
+                    <span>Results</span>
+                </a>
+                <a href="#" class="nav-item" data-page="history">
+                    <span>History</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <span class="status-dot online"></span>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 class="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" id="runPipelineBtn">
+                        <span>▶</span> Run Pipeline
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <section class="page active" id="page-dashboard">
+                <div class="dashboard-grid">
+                    <!-- Stats Cards -->
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📄</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="totalCVs">0</span>
+                            <span class="stat-label">Total CVs</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="shortlistedCount">0</span>
+                            <span class="stat-label">Shortlisted</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">❌</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="rejectedCount">0</span>
+                            <span class="stat-label">Rejected</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">🎯</div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="avgScore">0</span>
+                            <span class="stat-label">Avg Score</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Info Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <h3>Current Job Position</h3>
+                    </div>
+                    <div class="info-card-body" id="currentJobInfo">
+                        <div class="job-info-loading">Loading job information...</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <h3>Recent Pipeline Runs</h3>
+                    </div>
+                    <div class="info-card-body">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Run ID</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Started</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentRunsTable">
+                                <tr>
+                                    <td colspan="5" class="empty-state">No pipeline runs yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pipeline Progress Modal -->
+                <div class="modal" id="pipelineModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3> Pipeline Running</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="pipeline-progress">
+                                <div class="progress-step" id="step1">
+                                    <div class="step-indicator">1</div>
+                                    <div class="step-label">Parsing CVs</div>
+                                </div>
+                                <div class="progress-line"></div>
+                                <div class="progress-step" id="step2">
+                                    <div class="step-indicator">2</div>
+                                    <div class="step-label">Job Matching</div>
+                                </div>
+                                <div class="progress-line"></div>
+                                <div class="progress-step" id="step3">
+                                    <div class="step-indicator">3</div>
+                                    <div class="step-label">Ranking</div>
+                                </div>
+                                <div class="progress-line"></div>
+                                <div class="progress-step" id="step4">
+                                    <div class="step-indicator">4</div>
+                                    <div class="step-label">Report Gen</div>
+                                </div>
+                            </div>
+                            <div class="progress-status" id="progressStatus">
+                                Initializing pipeline...
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="progressBar"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closePipelineModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Page -->
+            <section class="page" id="page-upload">
+                <div class="upload-section">
+                    <div class="upload-card">
+                        <div class="upload-icon">📤</div>
+                        <h2>Upload CV Files</h2>
+                        <p>Upload PDF, DOCX, or TXT files</p>
+                        
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-content">
+                                <span class="drop-icon">📁</span>
+                                <p>Drag & drop files here or click to browse</p>
+                                <span class="file-types">PDF, DOCX, TXT</span>
+                            </div>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt" hidden>
+                        </div>
+
+                        <div class="uploaded-files" id="uploadedFiles">
+                            <!-- Uploaded files will appear here -->
+                        </div>
+
+                        <div class="upload-actions">
+                            <button class="btn btn-secondary" onclick="clearUploads()">
+                                Clear All
+                            </button>
+                            <button class="btn btn-primary" onclick="uploadFiles()">
+                                Upload Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Job Description Page -->
+            <section class="page" id="page-job-description">
+                <div class="form-section">
+                    <div class="form-card">
+                        <h2>Job Description</h2>
+                        <p class="form-subtitle">Define the position requirements</p>
+                        
+                        <form id="jobDescriptionForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="jobTitle">Job Title *</label>
+                                    <input type="text" id="jobTitle" required placeholder="e.g., Senior Python Developer">
+                                </div>
+                                <div class="form-group">
+                                    <label for="jobId">Job ID</label>
+                                    <input type="text" id="jobId" placeholder="Auto-generated if empty">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="minExperience">Minimum Experience (Years) *</label>
+                                    <input type="number" id="minExperience" required min="0" step="0.5" placeholder="3">
+                                </div>
+                                <div class="form-group">
+                                    <label for="educationReq">Education Requirement *</label>
+                                    <input type="text" id="educationReq" required placeholder="e.g., Bachelor's in Computer Science">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="requiredSkills">Required Skills *</label>
+                                <input type="text" id="requiredSkills" required placeholder="Comma-separated: Python, SQL, REST APIs">
+                                <span class="form-hint">Enter skills separated by commas</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="preferredSkills">Preferred Skills</label>
+                                <input type="text" id="preferredSkills" placeholder="Comma-separated: Docker, Kubernetes, AWS">
+                                <span class="form-hint">Nice-to-have skills (optional)</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="jobDescription">Job Description *</label>
+                                <textarea id="jobDescription" required rows="5" placeholder="Detailed description of the role and responsibilities..."></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="loadDefaultJob()">
+                                    Load Default
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    Save Job Description
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Page -->
+            <section class="page" id="page-results">
+                <div class="results-section">
+                    <div class="results-header">
+                        <h2>Candidate Rankings</h2>
+                        <div class="results-actions">
+                            <button class="btn btn-secondary" onclick="viewReport()">
+                                View Report
+                            </button>
+                            <button class="btn btn-primary" onclick="downloadReport()">
+                                Download Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="executive-summary" id="executiveSummary" style="display: none;">
+                        <h4> Executive Summary</h4>
+                        <p id="executiveSummaryText"></p>
+                    </div>
+
+                    <div class="candidates-list" id="candidatesList">
+                        <div class="empty-state-card">
+                            <span class="empty-icon">🔍</span>
+                            <h3>No Results Yet</h3>
+                            <p>Run the pipeline to see candidate rankings</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Page -->
+            <section class="page" id="page-history">
+                <div class="history-section">
+                    <h2>Pipeline History</h2>
+                    <div class="history-list" id="historyList">
+                        <div class="empty-state-card">
+                            <span class="empty-icon">📜</span>
+                            <h3>No History</h3>
+                            <p>Pipeline runs will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

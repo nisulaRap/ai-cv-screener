@@ -1,0 +1,109 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Packaging
+build/
+dist/
+*.egg
+*.egg-info/
+.eggs/
+
+# -------------------------
+# Virtual Environments
+# -------------------------
+venv/
+.venv/
+env/
+ENV/
+VENV/
+
+# -------------------------
+# Environment Variables
+# -------------------------
+.env
+.env.local
+.env.*.local
+
+# -------------------------
+# Database Files
+# -------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# -------------------------
+# Logs
+# -------------------------
+logs/
+*.log
+
+# -------------------------
+# Test / Coverage
+# -------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# -------------------------
+# Type Checking / Lint Cache
+# -------------------------
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+
+# -------------------------
+# IDE / Editor Files
+# -------------------------
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# -------------------------
+# OS Files
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Jupyter Notebook
+# -------------------------
+.ipynb_checkpoints/
+
+# -------------------------
+# Output / Generated Files
+# -------------------------
+output/
+outputs/
+*.jsonl
+#*.html
+*.pdf
+agent_trace.jsonl
+data/
+
+# -------------------------
+# ML Models (Large Files)
+# -------------------------
+*.bin
+*.gguf
+*.ggml
+*.onnx
+*.pt
+*.pth
+
+# -------------------------
+# CV / Sensitive Files
+# -------------------------
+data/cvs/
+*.pdf
+*.docx
+*.doc
