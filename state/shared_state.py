@@ -1,8 +1,4 @@
-# state/shared_state.py
-# Single source of truth for all agent state and data contracts.
-
 from typing import TypedDict, List, Optional, Any
-
 
 # ─────────────────────────────────────────────
 # Data-contract TypedDicts (shared by all agents)
