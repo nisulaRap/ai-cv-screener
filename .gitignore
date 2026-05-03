@@ -85,9 +85,10 @@ Thumbs.db
 output/
 outputs/
 *.jsonl
-*.html
+#*.html
 *.pdf
 agent_trace.jsonl
+data/
 
 # -------------------------
 # ML Models (Large Files)
