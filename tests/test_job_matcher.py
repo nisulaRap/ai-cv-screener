@@ -12,7 +12,7 @@ from tools.score_candidate_tool import (
     score_candidate
 )
 from database.db_manager import initialize_database, get_all_match_results, clear_results_for_job
-from shared_state import CandidateProfile, JobDescription
+from state.shared_state import CandidateProfile, JobDescription
 
 
 # ─────────────────────────────────────────────
